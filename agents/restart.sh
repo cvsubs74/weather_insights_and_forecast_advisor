@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Configuration: Set to use remote A2A agents (deployed on Cloud Run)
+export USE_REMOTE_AGENTS=true
+
+echo "🌐 Configuration: USE_REMOTE_AGENTS=$USE_REMOTE_AGENTS"
+if [ "$USE_REMOTE_AGENTS" = "true" ]; then
+    echo "   Chat agent will communicate with remote deployed agents via A2A protocol"
+else
+    echo "   Chat agent will use local sub-agents"
+fi
+echo ""
+
 # --- Sync Shared Tools ---
 echo "Syncing shared tools to all agents..."
 AGENTS_TO_SYNC=(

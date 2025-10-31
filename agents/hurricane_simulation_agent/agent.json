@@ -1,0 +1,35 @@
+{
+    "name": "weather_hurricane_simulation_agent",
+    "description": "An agent that analyzes hurricane satellite images using Gemini Vision API to extract metadata and generate evacuation priorities for high-risk locations based on historical flood data.",
+    "defaultInputModes": ["image/jpeg", "image/png", "multipart/form-data"],
+    "defaultOutputModes": ["application/json"],
+    "skills": [
+        {
+            "id": "analyze_hurricane_image",
+            "name": "Analyze Hurricane Image",
+            "description": "Extract hurricane metadata from satellite images including category, affected states, and geographic bounding box using Gemini Vision API.",
+            "tags": ["computer vision", "image analysis", "hurricane", "AI vision"]
+        },
+        {
+            "id": "calculate_evacuation_priority",
+            "name": "Calculate Evacuation Priority",
+            "description": "Generate prioritized evacuation locations based on historical flood risk data and population vulnerability.",
+            "tags": ["evacuation", "risk scoring", "prioritization", "emergency planning"]
+        },
+        {
+            "id": "query_flood_risk",
+            "name": "Query Flood Risk Data",
+            "description": "Access historical flood event data across multiple states from BigQuery to identify high-risk areas.",
+            "tags": ["flood risk", "historical data", "BigQuery", "disaster history"]
+        },
+        {
+            "id": "generate_evacuation_plan",
+            "name": "Generate Evacuation Plan",
+            "description": "Create comprehensive evacuation plans with top 20 high-risk locations and actionable recommendations.",
+            "tags": ["evacuation planning", "emergency response", "disaster management"]
+        }
+    ],
+    "url": "https://weather-hurricane-simulation-agent-juqzb7sbxa-uc.a.run.app",
+    "capabilities": {},
+    "version": "1.0.0"
+}

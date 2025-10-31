@@ -16,7 +16,7 @@ const WeatherIcon = ({ conditions, className }) => {
   if (normalizedConditions.includes('rain') || normalizedConditions.includes('drizzle')) {
     return <CloudArrowDownIcon className={className} />;
   }
-  if (normalizedConditions.includes('thunder') || normalizedConditions.includes('storm')) {
+    if (normalizedConditions.includes('thunder') || normalizedConditions.includes('storm') || normalizedConditions.includes('hurricane')) {
     return <BoltIcon className={className} />;
   }
   return <QuestionMarkCircleIcon className={className} />;

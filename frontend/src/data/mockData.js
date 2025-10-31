@@ -94,12 +94,13 @@ export const mockDashboardData = {
 export const mockForecastData = {
   location: "Tampa, Florida",
   current_conditions: "🌤️ Currently 84°F and Partly Cloudy. Humidity: 78%. Winds: ESE at 25 mph. Feels like 92°F. Pressure: 29.65 inHg and falling rapidly. Conditions will deteriorate significantly over the next 12 hours as Hurricane Milton approaches.",
+  insights: "Immediate preparations for Hurricane Milton are critical. Expect catastrophic conditions within 12-18 hours. Complete all evacuations and preparations now. This is a life-threatening situation.",
   daily_forecasts: [
     { 
       date: "2025-10-25",
       day: "Today", 
-      high: 86, 
-      low: 70, 
+      high_temp: 86, 
+      low_temp: 70, 
       conditions: "Deteriorating to Hurricane", 
       precipitation: 100,
       description: "Partly cloudy morning becoming stormy by afternoon. Hurricane conditions by evening."
@@ -107,59 +108,58 @@ export const mockForecastData = {
     { 
       date: "2025-10-26",
       day: "Tomorrow", 
-      high: 75, 
-      low: 68, 
-      conditions: "Hurricane Impact", 
+      high_temp: 75, 
+      low_temp: 68, 
+      conditions: "Hurricane Conditions", 
       precipitation: 100,
-      description: "Category 4 hurricane with 150 mph winds. Catastrophic damage expected."
+      description: "Hurricane Milton makes landfall. Catastrophic winds, storm surge, and flooding."
     },
     { 
       date: "2025-10-27",
-      day: "Sunday", 
-      high: 78, 
-      low: 70, 
-      conditions: "Improving", 
-      precipitation: 60,
-      description: "Conditions improving but still windy and rainy. Flooding continues."
+      day: "Mon", 
+      high_temp: 78, 
+      low_temp: 72, 
+      conditions: "Tropical Storm", 
+      precipitation: 80,
+      description: "Conditions slowly improve but remain dangerous. Widespread flooding and power outages."
     },
     { 
       date: "2025-10-28",
-      day: "Monday", 
-      high: 82, 
-      low: 72, 
-      conditions: "Partly Cloudy", 
-      precipitation: 30,
-      description: "Partly cloudy with scattered showers. Cleanup and recovery begins."
+      day: "Tue", 
+      high_temp: 82, 
+      low_temp: 75, 
+      conditions: "Scattered Thunderstorms", 
+      precipitation: 60,
+      description: "Lingering tropical moisture brings scattered thunderstorms."
     },
     { 
       date: "2025-10-29",
-      day: "Tuesday", 
-      high: 85, 
-      low: 74, 
-      conditions: "Mostly Sunny", 
-      precipitation: 10,
-      description: "Mostly sunny. Much improved conditions."
+      day: "Wed", 
+      high_temp: 85, 
+      low_temp: 76, 
+      conditions: "Partly Cloudy", 
+      precipitation: 20,
+      description: "Improving conditions with some sunshine returning."
     },
     { 
       date: "2025-10-30",
-      day: "Wednesday", 
-      high: 86, 
-      low: 75, 
-      conditions: "Sunny", 
-      precipitation: 5,
-      description: "Sunny and pleasant. Normal weather returns."
+      day: "Thu", 
+      high_temp: 87, 
+      low_temp: 77, 
+      conditions: "Mostly Sunny", 
+      precipitation: 10,
+      description: "Mostly sunny and warm."
     },
     { 
       date: "2025-10-31",
-      day: "Thursday", 
-      high: 87, 
-      low: 76, 
+      day: "Fri", 
+      high_temp: 88, 
+      low_temp: 78, 
       conditions: "Sunny", 
       precipitation: 5,
-      description: "Sunny and warm. Typical Florida weather."
+      description: "Sunny and beautiful, perfect for recovery efforts."
     }
-  ],
-  insights: "⚠️ **CRITICAL WEATHER SITUATION**: Hurricane Milton (Category 4) will make landfall near Tampa Bay within 24 hours. This is an extremely dangerous, life-threatening situation. **Today**: Conditions deteriorate rapidly - tropical storm force winds by 6 PM, hurricane force winds by midnight. **Tomorrow**: Peak impacts with 150 mph winds, 12-15 feet storm surge, and 10-15 inches of rain causing catastrophic flooding. **Weekend**: Gradual improvement but significant flooding and damage will persist. **IMMEDIATE ACTION REQUIRED**: If you are in evacuation zones A, B, or C, you must evacuate NOW. This is your last safe window to leave. If you cannot evacuate, seek shelter immediately at Tampa Convention Center or other designated shelters."
+  ]
 };
 
 export const mockEmergencyResources = {

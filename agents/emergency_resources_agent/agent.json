@@ -1,0 +1,41 @@
+{
+    "name": "weather_emergency_resources_agent",
+    "description": "An agent that helps users find nearby emergency resources including shelters, hospitals, and pharmacies using Google Maps API, with route planning and interactive map generation.",
+    "defaultInputModes": ["text/plain"],
+    "defaultOutputModes": ["application/json"],
+    "skills": [
+        {
+            "id": "find_shelters",
+            "name": "Find Emergency Shelters",
+            "description": "Locate emergency shelters within a specified radius of any location. if no location is provided, use the user's current location. if no radius is provided, use a default radius of 5 miles.",
+            "tags": ["emergency", "shelters", "safety", "disaster response"]
+        },
+        {
+            "id": "find_hospitals",
+            "name": "Find Hospitals",
+            "description": "Search for hospitals and medical facilities near a given location. if no location is provided, use the user's current location. if no radius is provided, use a default radius of 5 miles.",
+            "tags": ["medical", "hospitals", "healthcare", "emergency"]
+        },
+        {
+            "id": "find_pharmacies",
+            "name": "Find Pharmacies",
+            "description": "Discover nearby pharmacies for medication and medical supplies. if no location is provided, use the user's current location. if no radius is provided, use a default radius of 5 miles.",
+            "tags": ["pharmacy", "medical supplies", "healthcare"]
+        },
+        {
+            "id": "plan_evacuation_route",
+            "name": "Plan Evacuation Route",
+            "description": "Generate optimal routes with turn-by-turn directions to emergency resources. if no location is provided, use the user's current location. if no radius is provided, use a default radius of 5 miles.",
+            "tags": ["routing", "directions", "navigation", "evacuation"]
+        },
+        {
+            "id": "generate_resource_map",
+            "name": "Generate Resource Map",
+            "description": "Create interactive maps with markers for emergency resources and facilities. if no location is provided, use the user's current location. if no radius is provided, use a default radius of 5 miles.",
+            "tags": ["mapping", "visualization", "interactive map"]
+        }
+    ],
+    "url": "https://weather-emergency-resources-agent-juqzb7sbxa-uc.a.run.app",
+    "capabilities": {},
+    "version": "1.0.0"
+}

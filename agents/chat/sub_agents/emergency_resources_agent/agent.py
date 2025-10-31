@@ -1,7 +1,14 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from typing import List, Optional, Dict
 from google.adk.agents import LlmAgent, SequentialAgent
 from pydantic import BaseModel, Field
-from ...tools import geocode_address, search_nearby_places, get_directions
+from ...tools.tools import geocode_address, search_nearby_places, get_directions
+from google.adk.tools import google_search
 from ...tools.logging_utils import log_agent_entry, log_agent_exit
 
 class Coordinates(BaseModel):
@@ -79,6 +86,33 @@ resource_finder = LlmAgent(
     after_model_callback=log_agent_exit,
 )
 
+# Phase 2.5: Phone Number Finder
+phone_number_finder = LlmAgent(
+    model="gemini-2.5-flash-lite",
+    name="phone_number_finder",
+    description="Finds phone numbers for a list of facilities using Google Search.",
+    instruction="""
+    You are a phone number lookup specialist. Your job is to enrich a list of facilities with their phone numbers.
+
+    **CONTEXT:**
+    The `state['facilities']` key contains a list of facilities (hospitals, shelters, etc.) found by the previous agent. Each facility is a dictionary with 'name' and 'address'. The 'phone' field is currently empty.
+
+    **YOUR TASK:**
+    1.  Iterate through each facility in the `state['facilities']` list.
+    2.  For each facility, create a precise search query: `f"phone number for {facility['name']}, {facility['address']}"`.
+    3.  Call the `google_search` tool with that query.
+    4.  Extract the phone number from the search result. If a phone number is found, update the 'phone' field for that facility in the list.
+    5.  If no phone number is found, leave the 'phone' field as `None`.
+    6.  After iterating through all facilities, store the updated list of facilities for the next agent.
+
+    **CRITICAL:** Do not change any other data. Only add the phone number if you find it.
+    """,
+    tools=[google_search],
+    output_key="facilities",  # Overwrite the facilities list with the enriched one
+    before_model_callback=log_agent_entry,
+    after_model_callback=log_agent_exit,
+)
+
 # Phase 3: Route Calculator
 route_calculator = LlmAgent(
     model="gemini-2.5-flash-lite",
@@ -147,7 +181,11 @@ emergency_resources_workflow = SequentialAgent(
     sub_agents=[
         location_parser,
         resource_finder,
+        phone_number_finder,
         route_calculator,
         final_synthesizer,
     ],
 )
+
+# ADK export pattern
+root_agent = emergency_resources_workflow

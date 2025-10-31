@@ -49,6 +49,8 @@ deploy_agent() {
             --service_name="$service_name" \
             --allow_origins="*" \
             --with_ui \
+            --a2a \
+            --log_level debug \
             "$agent_path" 2>&1; then
             
             # Capture the URL of the deployed service

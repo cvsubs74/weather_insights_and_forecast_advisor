@@ -1,0 +1,29 @@
+{
+    "name": "weather_forecast_agent",
+    "description": "An agent that provides detailed 7-day weather forecasts and 48-hour hourly predictions for any location using the National Weather Service API.",
+    "defaultInputModes": ["text/plain"],
+    "defaultOutputModes": ["application/json"],
+    "skills": [
+        {
+            "id": "get_location_forecast",
+            "name": "Get Location Forecast",
+            "description": "Retrieve 7-day weather forecast with day/night periods for any US location.",
+            "tags": ["weather", "forecast", "prediction"]
+        },
+        {
+            "id": "get_hourly_forecast",
+            "name": "Get Hourly Forecast",
+            "description": "Fetch detailed hourly weather predictions for the next 48 hours.",
+            "tags": ["weather", "hourly", "detailed forecast"]
+        },
+        {
+            "id": "geocode_location",
+            "name": "Geocode Location",
+            "description": "Convert location names or addresses to geographic coordinates for weather data retrieval.",
+            "tags": ["geocoding", "location", "coordinates"]
+        }
+    ],
+    "url": "https://weather-forecast-agent-juqzb7sbxa-uc.a.run.app",
+    "capabilities": {},
+    "version": "1.0.0"
+}

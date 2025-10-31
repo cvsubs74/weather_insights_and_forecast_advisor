@@ -1,0 +1,19 @@
+{
+    "name": "weather_alerts_snapshot_agent",
+    "description": "An agent that retrieves and analyzes the weather alerts for a given location. If no location is provided, get alerts for the entire United States.",
+    "defaultInputModes": ["text/plain"],
+    "defaultOutputModes": ["application/json"],
+    "skills": [
+        {
+            "id": "get_weather_a;erts",
+            "name": "Get Weather Alerts",
+            "description": "Get weather alerts for a given location. If no location is provided, get alerts for the entire United States.",
+            "tags": ["weather", "alerts", "emergency", "monitoring"]
+        }
+    ],
+    "url": "https://weather-alerts-snapshot-agent-juqzb7sbxa-uc.a.run.app",
+    "capabilities": {},
+    "version": "1.0.0"
+}
+
+

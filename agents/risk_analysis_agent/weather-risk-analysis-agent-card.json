@@ -1,0 +1,35 @@
+{
+    "name": "weather_risk_analysis_agent",
+    "description": "An agent that analyzes weather alerts to identify vulnerable populations and high-risk areas using census demographics and historical flood data from BigQuery.",
+    "defaultInputModes": ["text/plain"],
+    "defaultOutputModes": ["application/json"],
+    "skills": [
+        {
+            "id": "analyze_alert_impact",
+            "name": "Analyze Alert Impact",
+            "description": "Assess the impact of weather alerts on vulnerable populations including elderly, low-income, and flood-prone areas.",
+            "tags": ["risk analysis", "vulnerability", "demographics", "impact assessment"]
+        },
+        {
+            "id": "calculate_risk_scores",
+            "name": "Calculate Risk Scores",
+            "description": "Generate risk scores (0-10) for affected areas based on population demographics and historical disaster data.",
+            "tags": ["risk scoring", "analysis", "prioritization"]
+        },
+        {
+            "id": "query_demographics",
+            "name": "Query Demographics",
+            "description": "Retrieve census demographic data including population, age distribution, and income levels.",
+            "tags": ["census", "demographics", "population data"]
+        },
+        {
+            "id": "query_flood_history",
+            "name": "Query Flood History",
+            "description": "Access historical flood event data to identify high-risk areas.",
+            "tags": ["historical data", "flood risk", "disaster history"]
+        }
+    ],
+    "url": "https://weather-risk-analysis-agent-juqzb7sbxa-uc.a.run.app",
+    "capabilities": {},
+    "version": "1.0.0"
+}
