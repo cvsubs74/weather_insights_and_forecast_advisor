@@ -22,6 +22,7 @@ AGENTS_TO_DEPLOY=(
     "weather-risk-analysis-agent:agents/risk_analysis_agent"
     "weather-hurricane-simulation-agent:agents/hurricane_simulation_agent"
     "weather-chat-agent:agents/chat"
+    "weather-map-agent:agents/weather_map_agent"
 )
 
 # --- Helper Functions ---
@@ -56,6 +57,15 @@ deploy_agent() {
             # Capture the URL of the deployed service
             local service_url=$(gcloud run services describe "$service_name" --platform managed --region "$REGION" --format 'value(status.url)' 2>&1)
             echo "✅ Successfully deployed $service_name to: $service_url"
+
+            # Set IAM policy to allow public access (to fix CORS)
+            echo "🔐 Setting IAM policy for $service_name to allow public access..."
+            gcloud run services add-iam-policy-binding "$service_name" \
+                --member="allUsers" \
+                --role="roles/run.invoker" \
+                --region="$REGION" \
+                --platform=managed > /dev/null 2>&1
+            echo "✅ IAM policy updated for $service_name"
             
             # Store URL for frontend .env file (with lock to prevent race conditions)
             local env_var_name=$(echo "$service_name" | tr '[:lower:]' '[:upper:]' | tr '-' '_')_URL
