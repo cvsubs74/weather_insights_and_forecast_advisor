@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import LocationMap from '../components/LocationMap';
 import RiskAnalysisModal from '../components/RiskAnalysisModal';
@@ -16,7 +16,8 @@ import {
   BuildingOffice2Icon,
   ArrowPathIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 const Dashboard = () => {
@@ -35,9 +36,6 @@ const Dashboard = () => {
   const [location, setLocation] = useState(() => {
     return localStorage.getItem('dashboardLocation') || '';
   });
-  const [selectedFilter, setSelectedFilter] = useState(() => {
-    return localStorage.getItem('dashboardFilter') || '';
-  });
   const [selectedState, setSelectedState] = useState(() => {
     const saved = localStorage.getItem('dashboardSelectedState');
     return saved || '';
@@ -53,7 +51,7 @@ const Dashboard = () => {
   });
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const eventsPerPage = 3;
+  const eventsPerPage = 4;
 
   // State for Risk Analysis Modal
   const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
@@ -64,6 +62,8 @@ const Dashboard = () => {
   // Map State
   const [mapView, setMapView] = useState({ center: [39.8283, -98.5795], zoom: 4 });
   const [mapMarkers, setMapMarkers] = useState([]);
+  const [alertPage, setAlertPage] = useState(0);
+  const alertsPerPage = 4;
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -73,11 +73,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (location) localStorage.setItem('dashboardLocation', location);
   }, [location]);
-
-  useEffect(() => {
-    localStorage.setItem('dashboardFilter', selectedFilter);
-  }, [selectedFilter]);
-
 
   useEffect(() => {
     if (severeEvents.length > 0) localStorage.setItem('dashboardSevereEvents', JSON.stringify(severeEvents));
@@ -109,7 +104,6 @@ const Dashboard = () => {
         setAgentResponse(mockDashboardData.insights);
         setLocation('Tampa Bay, Florida');
         setSelectedRegion('South');
-        setSelectedFilter('region');
         
         
         // Auto-trigger risk analysis popup at the risk-analysis tour step
@@ -138,7 +132,6 @@ const Dashboard = () => {
       if (!savedAlerts || savedAlerts === '[]') {
         // Default to National search on first load
         setSelectedRegion('National');
-        setSelectedFilter('region');
         setLocation('National');
         loadAlerts('National');
       } else if (savedRegion === 'National') {
@@ -159,7 +152,6 @@ const Dashboard = () => {
       // Clear all dashboard state
       setAgentResponse('');
       setLocation('');
-      setSelectedFilter('');
       setSevereEvents([]);
       setAlerts([]);
       localStorage.removeItem('dashboardSevereEvents');
@@ -211,8 +203,10 @@ const Dashboard = () => {
     try {
       const response = await api.getAlerts(currentLocation);
       if (response && response.alerts && Array.isArray(response.alerts)) {
-        setAlerts(response.alerts);
-        if (response.alerts.length > 0) {
+        const severityOrder = { 'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1, 'Unknown': 0 };
+        const sortedAlerts = response.alerts.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+        setAlerts(sortedAlerts);
+        if (sortedAlerts.length > 0) {
           setAgentResponse(`Found ${response.alerts.length} alerts for ${currentLocation}.`);
         } else {
           setAgentResponse(`No active alerts found for ${currentLocation}.`);
@@ -371,7 +365,7 @@ const Dashboard = () => {
           const severityOrder = { 'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1, 'Unknown': 0 };
           return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
         });
-        setAlerts(sortedAlerts.slice(0, 3));
+        setAlerts(sortedAlerts);
       } else {
         setAlerts([]);
       }
@@ -395,17 +389,6 @@ const Dashboard = () => {
   };
 
 
-  const handleFilterChange = (filterType, value) => {
-    let displayName = value;
-    if (filterType === 'region') {
-      const region = regions.find(r => r.value === value);
-      displayName = region?.displayName || value;
-    }
-    setSelectedFilter(filterType);
-    setLocation(displayName);
-    loadAlerts(displayName);
-  };
-
   const handleStateSelect = (stateCode) => {
     setSelectedState(stateCode);
     setSelectedRegion(''); // Clear region when selecting individual state
@@ -419,7 +402,6 @@ const Dashboard = () => {
     }
     
     setSelectedRegion(''); // Clear region selection when using custom state
-    setSelectedFilter('state');
     setLocation(selectedState);
     setIsDropdownOpen(false); // Close dropdown after applying
     loadAlerts(selectedState);
@@ -455,12 +437,10 @@ const Dashboard = () => {
     setSelectedRegion(regionName);
     setSelectedState(''); // Clear individual state selection
     setIsDropdownOpen(false); // Close dropdown
-    
-    // Trigger immediate search for the region
-    setSelectedFilter('region');
     setLocation(regionStates);
     loadAlerts(regionStates);
   };
+
 
   const handleRefresh = () => {
     // Reset session to get fresh data
@@ -470,11 +450,9 @@ const Dashboard = () => {
     sessionStorage.removeItem('weatherAlerts');
     localStorage.removeItem('dashboardResponse');
     localStorage.removeItem('dashboardLocation');
-    localStorage.removeItem('dashboardFilter');
     localStorage.removeItem('dashboardSevereEvents');
     localStorage.removeItem('dashboardAlerts');
     setLocation('');
-    setSelectedFilter('');
     setSevereEvents([]);
     setAlerts([]);
     setAgentResponse('');
@@ -600,11 +578,6 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {severeEvents.slice(carouselIndex, carouselIndex + eventsPerPage).map((event, index) => (
-              <SevereWeatherCard key={carouselIndex + index} event={event} onAnalyzeRisk={handleAnalyzeRisk} />
-            ))}
-          </div>
           {severeEvents.length > eventsPerPage && (
             <div className="mt-4 text-center text-sm text-gray-500">
               Showing {carouselIndex + 1}-{Math.min(carouselIndex + eventsPerPage, severeEvents.length)} of {severeEvents.length} events
@@ -613,179 +586,92 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* State Selection */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">🌍 Select Region or State for Weather Alerts</h2>
-          {selectedState && (
-            <span className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded-full">
-              {allUSStates.find(s => s.code === selectedState)?.name || selectedState}
-            </span>
-          )}
-        </div>
-        
-        {/* Quick Region Selectors */}
-        <div className="mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-3">Quick Select by Region:</p>
-          <div className="flex flex-wrap gap-2">
-            {regions.map((region) => {
-              const isSelected = selectedRegion === region.name;
-              return (
-                <button
-                  key={region.name}
-                  onClick={() => handleSelectRegion(region.name, region.value)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    isSelected
-                      ? 'bg-primary text-white ring-2 ring-primary ring-offset-2 shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <span className="mr-2">{region.icon}</span>
-                  {region.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* State Single-Select Dropdown */}
-        <div className="mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-3">Or Select Individual State:</p>
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+      {/* New Compact Location Selector */}
+      <div className="bg-white rounded-lg shadow-md p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          {/* Region Selector */}
+          <div className="col-span-1">
+            <label htmlFor="region-select" className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+            <select
+              id="region-select"
+              value={selectedRegion}
+              onChange={(e) => handleSelectRegion(e.target.value, regions.find(r => r.name === e.target.value)?.value || '')}
+              className="w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md shadow-sm"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700">
-                  {!selectedState 
-                    ? 'Select a state...' 
-                    : allUSStates.find(s => s.code === selectedState)?.name || selectedState}
-                </span>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+              {regions.map(region => (
+                <option key={region.name} value={region.name}>{region.icon} {region.displayName}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* State Selector */}
+          <div className="col-span-1">
+            <label htmlFor="state-select" className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <select
+              id="state-select"
+              value={selectedState}
+              onChange={(e) => handleStateSelect(e.target.value)}
+              className="w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md shadow-sm"
+            >
+              <option value="">-- Select a State --</option>
+              {allUSStates.map(state => (
+                <option key={state.code} value={state.code}>{state.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Button */}
+          <div className="col-span-1 self-end">
+            <button
+              onClick={handleApplyState}
+              disabled={loading || (!selectedState && selectedRegion === 'National')}
+              className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+            >
+              <MagnifyingGlassIcon className="-ml-1 mr-2 h-5 w-5" />
+              Get Alerts
             </button>
-
-            {/* Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
-                {/* Search Box */}
-                <div className="p-3 border-b border-gray-200 sticky top-0 bg-white">
-                  <input
-                    type="text"
-                    placeholder="Search states..."
-                    value={stateSearchTerm}
-                    onChange={(e) => setStateSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-
-                {/* State List */}
-                <div className="overflow-y-auto max-h-64">
-                  {allUSStates
-                    .filter(state => 
-                      state.name.toLowerCase().includes(stateSearchTerm.toLowerCase()) ||
-                      state.code.toLowerCase().includes(stateSearchTerm.toLowerCase())
-                    )
-                    .map((state) => {
-                      const isSelected = selectedState === state.code;
-                      return (
-                        <button
-                          key={state.code}
-                          onClick={() => handleStateSelect(state.code)}
-                          className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors ${
-                            isSelected ? 'bg-blue-50 border-l-4 border-primary' : ''
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-gray-900">{state.name}</div>
-                              <div className="text-xs text-gray-500">{state.code} • {state.region}</div>
-                            </div>
-                            {isSelected && (
-                              <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleApplyState}
-            disabled={loading || !selectedState}
-            className="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
-          >
-            {loading ? (
-              <>
-                <ArrowPathIcon className="h-5 w-5 mr-2 animate-spin" />
-                Loading Alerts...
-              </>
-            ) : (
-              <>
-                <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
-                Get Alerts for Selected State
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleClearState}
-            disabled={!selectedState}
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            Clear
-          </button>
-        </div>
-
-        {/* Selected State Display */}
-        {selectedState && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-2">Selected State:</p>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary text-white">
-                {allUSStates.find(s => s.code === selectedState)?.name || selectedState}
-                <button
-                  onClick={handleClearState}
-                  className="ml-2 hover:bg-blue-900 rounded-full p-0.5"
-                >
-                  ✕
-                </button>
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
 
       {/* Active Alerts Section - Full Width */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
             {alerts.length > 0 && !location ? '🚨 Severe Weather Alerts' : `Active Alerts${location && agentResponse ? ` - ${location === 'all US states' ? 'National' : location}` : ''}`}
           </h2>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center space-x-2 text-primary hover:text-blue-900 text-sm font-medium disabled:opacity-50"
-          >
+          <div className="flex items-center gap-4">
+            {alerts.length > alertsPerPage && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAlertPage(p => Math.max(0, p - 1))}
+                  disabled={alertPage === 0}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeftIcon className="h-5 w-5 text-gray-700" />
+                </button>
+                <span className="text-sm text-gray-600">
+                  {alertPage + 1} / {Math.ceil(alerts.length / alertsPerPage)}
+                </span>
+                <button
+                  onClick={() => setAlertPage(p => Math.min(Math.ceil(alerts.length / alertsPerPage) - 1, p + 1))}
+                  disabled={(alertPage + 1) * alertsPerPage >= alerts.length}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRightIcon className="h-5 w-5 text-gray-700" />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center space-x-2 text-primary hover:text-blue-900 text-sm font-medium disabled:opacity-50"
+            >
             <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
+         </div>
         </div>
         
         {loading ? (
@@ -793,8 +679,8 @@ const Dashboard = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         ) : alerts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {alerts.map((alert, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {alerts.slice(alertPage * alertsPerPage, (alertPage + 1) * alertsPerPage).map((alert, index) => (
               <SevereWeatherCard 
                 key={index} 
                 event={alert} 
@@ -819,37 +705,32 @@ const Dashboard = () => {
 
       {/* Bottom Section: Map and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Map Section */}
-        <div className="lg:col-span-4 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📍 National Alert Map</h2>
-          <LocationMap 
-            key={mapView.center.join(',')}
-            center={mapView.center} 
-            zoom={mapView.zoom} 
-            markers={mapMarkers} 
-            height="450px" 
-          />
+        {/* Map */}
+        <div className="lg:col-span-4 bg-white rounded-lg shadow-md p-4" data-tour-id="dashboard-map">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">📍 Regional Map</h2>
+          <div className="h-[400px] w-full rounded-lg overflow-hidden">
+            <LocationMap 
+              center={mapView.center} 
+              zoom={mapView.zoom} 
+              markers={mapMarkers} 
+            />
+          </div>
         </div>
 
-        {/* Quick Actions Sidebar */}
-        <div className="bg-white rounded-lg shadow-md p-6 h-fit">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        {/* Quick Actions */}
+        <div className="lg:col-span-1 bg-white rounded-lg shadow-md p-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">⚡ Quick Actions</h2>
           <div className="space-y-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.name}
-                  to={action.href}
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
-                >
-                  <div className={`${action.color} p-2 rounded-lg`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{action.name}</span>
-                </Link>
-              );
-            })}
+            {quickActions.map((action) => (
+              <Link
+                key={action.name}
+                to={action.href}
+                className={`w-full flex items-center p-3 text-left text-white ${action.color} rounded-lg hover:opacity-90 transition-opacity`}
+              >
+                <action.icon className="h-6 w-6 mr-3 text-white" />
+                <span className="font-medium">{action.name}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </div>

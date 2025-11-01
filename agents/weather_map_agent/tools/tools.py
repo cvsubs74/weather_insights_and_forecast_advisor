@@ -690,20 +690,9 @@ def get_nws_alerts(
         
         # For large alert sets, only return top critical alerts to prevent timeout
         total_count = len(alerts)
-        if total_count > 10:
-            # Sort by severity priority: Extreme > Severe > Moderate > Minor
-            severity_priority = {"Extreme": 0, "Severe": 1, "Moderate": 2, "Minor": 3, "Unknown": 4}
-            alerts.sort(key=lambda x: severity_priority.get(x["severity"], 4))
-            
-            # More aggressive limiting for national queries (no state/coords specified)
-            if not state and not latitude and not longitude:
-                # National query - limit to top 5 most critical alerts
-                alerts = alerts[:5]
-                logger.info(f"National query: Limiting to top 5 critical alerts out of {total_count} total")
-            else:
-                # Regional query - limit to top 10 alerts
-                alerts = alerts[:10]
-                logger.info(f"Regional query: Limiting to top 10 alerts out of {total_count} total")
+        # Sort by severity priority: Extreme > Severe > Moderate > Minor
+        severity_priority = {"Extreme": 0, "Severe": 1, "Moderate": 2, "Minor": 3, "Unknown": 4}
+        alerts.sort(key=lambda x: severity_priority.get(x["severity"], 4))
         
         # Save to state
         tool_context.state["alerts"] = {

@@ -59,9 +59,9 @@ const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
           <div className="flex items-center space-x-3 min-w-0">
             {getEventIcon(event.event)}
             <div className="flex-1">
-              <h3 className="font-bold text-lg truncate">{event.event}</h3>
+              <h3 className="font-bold text-lg">{event.event}</h3>
               <div className="text-sm opacity-90">
-                <span className="block truncate">
+                <span className="block">
                   {event.severity} Alert
                 </span>
               </div>
@@ -74,10 +74,7 @@ const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
       <div className="p-4 space-y-3 flex-grow flex flex-col">
         {/* Compact headline info */}
         <div className="text-xs text-gray-500 border-b border-gray-100 pb-2">
-          {event.headline && event.headline.length > 100 ? 
-            `${event.headline.substring(0, 100)}...` : 
-            event.headline
-          }
+          {event.headline}
         </div>
         
         <div className="text-gray-700 text-sm prose prose-sm max-w-none flex-grow">
@@ -104,17 +101,17 @@ const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
               Ends: {formatEndTime(event.end_time)}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between gap-2">
             <button 
               onClick={() => onAnalyzeRisk(event)}
-              className="w-full text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-900 font-medium transition-colors disabled:opacity-50"
+              className="flex-1 text-center px-3 py-1.5 bg-primary text-white rounded-md hover:bg-blue-900 text-xs font-semibold transition-colors disabled:opacity-50"
               disabled={!onAnalyzeRisk}
             >
               Analyze Risk
             </button>
             <button 
               onClick={() => onShowOnMap(event)}
-              className="w-full text-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-gray-700 font-medium transition-colors disabled:opacity-50"
+              className="flex-1 text-center px-3 py-1.5 bg-secondary text-white rounded-md hover:bg-gray-700 text-xs font-semibold transition-colors disabled:opacity-50"
               disabled={!onShowOnMap || !event.affected_zones || event.affected_zones.length === 0}
             >
               Show on Map
