@@ -61,6 +61,10 @@ const Dashboard = () => {
   const [riskAnalysis, setRiskAnalysis] = useState(null);
   const [isAnalyzingRisk, setIsAnalyzingRisk] = useState(false);
 
+  // Map State
+  const [mapView, setMapView] = useState({ center: [39.8283, -98.5795], zoom: 4 });
+  const [mapMarkers, setMapMarkers] = useState([]);
+
   // Save to localStorage whenever state changes
   useEffect(() => {
     if (agentResponse) localStorage.setItem('dashboardResponse', agentResponse);
@@ -135,8 +139,8 @@ const Dashboard = () => {
         // Default to National search on first load
         setSelectedRegion('National');
         setSelectedFilter('region');
-        setLocation('all US states');
-        loadAlerts('all US states');
+        setLocation('National');
+        loadAlerts('National');
       } else if (savedRegion === 'National') {
         // Maintain National selection if it was previously selected
         setSelectedRegion('National');
@@ -426,6 +430,27 @@ const Dashboard = () => {
     setSelectedRegion('');
   };
 
+  const handleShowOnMap = async (alert) => {
+    if (!alert.affected_zones || alert.affected_zones.length === 0) {
+      return;
+    }
+    try {
+      const mapData = await api.getMapForZones(alert.affected_zones);
+      // The agent returns a nested structure: { map_data: { markers: [], center: {} } }
+      if (mapData && mapData.map_data && mapData.map_data.markers) {
+        setMapMarkers(mapData.map_data.markers);
+        if (mapData.map_data.center) {
+          setMapView({ 
+            center: [mapData.map_data.center.lat, mapData.map_data.center.lng], 
+            zoom: 7 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get map data for zones:', error);
+    }
+  };
+
   const handleSelectRegion = (regionName, regionStates) => {
     setSelectedRegion(regionName);
     setSelectedState(''); // Clear individual state selection
@@ -469,7 +494,7 @@ const Dashboard = () => {
   ];
 
   const regions = [
-    { name: 'National', value: 'all US states', displayName: 'National', icon: '🇺🇸' },
+    { name: 'National', value: 'National', displayName: 'National', icon: '🇺🇸' },
     { name: 'West', value: 'CA,OR,WA,NV,AZ,ID,MT,WY,CO,UT,NM,AK,HI', displayName: 'Western US', icon: '🏔️' },
     { name: 'Midwest', value: 'IL,IN,IA,KS,MI,MN,MO,NE,ND,OH,SD,WI', displayName: 'Midwest US', icon: '🌾' },
     { name: 'South', value: 'AL,AR,DE,FL,GA,KY,LA,MD,MS,NC,OK,SC,TN,TX,VA,WV', displayName: 'Southern US', icon: '🌴' },
@@ -746,11 +771,12 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Active Alerts Section */}
+
+      {/* Active Alerts Section - Full Width */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
-            {alerts.length > 0 && !location ? '🚨 Severe Weather Alerts' : `Active Alerts${location && agentResponse ? ` - ${location}` : ''}`}
+            {alerts.length > 0 && !location ? '🚨 Severe Weather Alerts' : `Active Alerts${location && agentResponse ? ` - ${location === 'all US states' ? 'National' : location}` : ''}`}
           </h2>
           <button
             onClick={handleRefresh}
@@ -769,7 +795,12 @@ const Dashboard = () => {
         ) : alerts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {alerts.map((alert, index) => (
-              <SevereWeatherCard key={index} event={alert} onAnalyzeRisk={handleAnalyzeRisk} />
+              <SevereWeatherCard 
+                key={index} 
+                event={alert} 
+                onAnalyzeRisk={handleAnalyzeRisk} 
+                onShowOnMap={handleShowOnMap} 
+              />
             ))}
           </div>
         ) : agentResponse ? (
@@ -786,23 +817,40 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.name}
-                to={action.href}
-                className={`flex flex-col items-center justify-center text-center p-4 rounded-lg transition-all ${action.color} text-white hover:opacity-90 shadow-md`}
-              >
-                <Icon className="h-8 w-8 mb-2" />
-                <span className="font-semibold text-sm">{action.name}</span>
-              </Link>
-            );
-          })}
+      {/* Bottom Section: Map and Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Map Section */}
+        <div className="lg:col-span-4 bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">📍 National Alert Map</h2>
+          <LocationMap 
+            key={mapView.center.join(',')}
+            center={mapView.center} 
+            zoom={mapView.zoom} 
+            markers={mapMarkers} 
+            height="450px" 
+          />
+        </div>
+
+        {/* Quick Actions Sidebar */}
+        <div className="bg-white rounded-lg shadow-md p-6 h-fit">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="space-y-3">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={action.name}
+                  to={action.href}
+                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                >
+                  <div className={`${action.color} p-2 rounded-lg`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">{action.name}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -797,7 +797,8 @@ class WeatherAgentAPI {
             mapData = JSON.parse(text);
             console.log('[API] Parsed MapData:', mapData);
           } catch (e) {
-            console.error('[API] Failed to parse map data JSON:', e);
+            console.error('[API] Failed to parse map data JSON:', e, 'Raw text:', text);
+            mapData = null; // Prevent crash
           }
         }
       }

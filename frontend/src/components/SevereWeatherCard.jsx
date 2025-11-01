@@ -8,7 +8,7 @@ import {
   ShieldCheckIcon, // For general warnings
 } from '@heroicons/react/24/outline';
 
-const SevereWeatherCard = ({ event, onAnalyzeRisk }) => {
+const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
   const getEventIcon = (eventName) => {
     const lowerEvent = eventName.toLowerCase();
     const iconClass = "h-8 w-8 text-white";
@@ -104,13 +104,22 @@ const SevereWeatherCard = ({ event, onAnalyzeRisk }) => {
               Ends: {formatEndTime(event.end_time)}
             </span>
           </div>
-          <button 
-            onClick={() => onAnalyzeRisk(event)}
-            className="block w-full text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-900 font-medium transition-colors disabled:opacity-50"
-            disabled={!onAnalyzeRisk}
-          >
-            Analyze Risk
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={() => onAnalyzeRisk(event)}
+              className="w-full text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-900 font-medium transition-colors disabled:opacity-50"
+              disabled={!onAnalyzeRisk}
+            >
+              Analyze Risk
+            </button>
+            <button 
+              onClick={() => onShowOnMap(event)}
+              className="w-full text-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-gray-700 font-medium transition-colors disabled:opacity-50"
+              disabled={!onShowOnMap || !event.affected_zones || event.affected_zones.length === 0}
+            >
+              Show on Map
+            </button>
+          </div>
         </div>
       </div>
     </div>
