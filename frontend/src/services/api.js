@@ -7,7 +7,8 @@ const AGENT_PORTS = {
   risk: 8083,
   emergency: 8084,
   chat: 8090,
-  hurricane: 8085
+  hurricane: 8085,
+  map: 8086
 };
 
 const SESSION_STORAGE_KEY = 'weather_agent_session_id';
@@ -58,6 +59,11 @@ class WeatherAgentAPI {
         baseURL: getBaseUrl('hurricane_simulation', AGENT_PORTS.hurricane),
         headers: { 'Content-Type': 'application/json' },
         timeout: 300000, // 5 minutes - increased for image analysis and evacuation priority calculations
+      }),
+      map: axios.create({
+        baseURL: getBaseUrl('map', AGENT_PORTS.map),
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 120000, // 2 minutes for zone geocoding and map generation
       }),
     };
 
@@ -749,6 +755,59 @@ class WeatherAgentAPI {
     } catch (error) {
       console.error('[API] Error analyzing hurricane image:', error);
       throw new Error(error.response?.data?.message || error.message || 'Failed to analyze hurricane image');
+    }
+  }
+
+  async getMapForZones(zones) {
+    try {
+      console.log('[API] Getting map for zones:', zones);
+      
+      // Create session first
+      const sessionResponse = await this.clients.map.post('/apps/weather_map_agent/users/user_001/sessions', {
+        state: {}
+      });
+      const sessionId = sessionResponse.data.id;
+      console.log('[API] Created map session:', sessionId);
+      
+      // Call weather map agent
+      const response = await this.clients.map.post('/run', {
+        app_name: 'weather_map_agent',
+        user_id: 'user_001',
+        session_id: sessionId,
+        new_message: {
+          role: 'user',
+          parts: [{ text: `Generate a map for these zones: ${zones.join(', ')}` }],
+        },
+        streaming: false,
+      });
+
+      console.log('[API] Map agent response:', response.data);
+
+      // Parse ADK response
+      const data = response.data;
+      let mapData = null;
+      
+      if (Array.isArray(data) && data.length > 0) {
+        // Get the final step (map data output)
+        const finalStep = data[data.length - 1];
+        const text = finalStep?.content?.parts?.[0]?.text;
+        
+        if (text) {
+          try {
+            mapData = JSON.parse(text);
+            console.log('[API] Parsed MapData:', mapData);
+          } catch (e) {
+            console.error('[API] Failed to parse map data JSON:', e);
+          }
+        }
+      }
+
+      this.updateSessionTimestamp();
+
+      return mapData;
+    } catch (error) {
+      console.error('[API] Error getting map for zones:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get map data');
     }
   }
 }

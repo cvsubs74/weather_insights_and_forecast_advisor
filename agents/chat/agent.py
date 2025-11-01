@@ -18,6 +18,7 @@ from .sub_agents.risk_analysis_agent.agent import risk_analysis_workflow
 from .sub_agents.emergency_resources_agent.agent import emergency_resources_workflow
 from .sub_agents.hurricane_simulation_agent.agent import hurricane_analysis_workflow
 from .sub_agents.google_search_agent.agent import GoogleSearchAgent
+from .sub_agents.weather_map_agent.agent import weather_map_agent
 
 import logging
 import os
@@ -88,13 +89,42 @@ if USE_REMOTE_AGENTS:
         - **General Knowledge/Web Search** → google_search_agent
           Keywords: who is, what is, when did, explain, search for
           Example: "Who is the current CEO of Google?" or "What is the capital of Mongolia?"
+
+        - **Map Generation/Visualization** → weather_map_agent
+          Keywords: map, draw, visualize, plot, show on map
+          Example: "Draw a map of the affected zones" or "Show me these alerts on a map"
         
+        **MULTI-STEP TASK EXECUTION:**
+        - For complex queries, you must break down the task and call tools in a logical sequence. Synthesize the results into one final answer.
+
+        **Example 1: Alerts + Risk Analysis**
+        - **Query:** "Analyze the risks for active alerts in Florida."
+        - **Step 1:** Call `weather_alerts_snapshot_agent` for "Florida" to get active alerts.
+        - **Step 2:** Take the resulting alert information and pass it to `weather_risk_analysis_agent`.
+        - **Step 3:** Synthesize the alert details and the risk analysis into a comprehensive summary.
+
+        **Example 2: Alerts + Map**
+        - **Query:** "Show me the alerts in Texas on a map."
+        - **Step 1:** Call `weather_alerts_snapshot_agent` for "Texas" to get alert details and affected zones.
+        - **Step 2:** Extract the `affected_zones` from the result and pass them to `weather_map_agent`.
+        - **Step 3:** Combine the text-based alert summary and the generated map into the final response.
+
+        **Example 3: General Knowledge + Alerts**
+        - **Query:** "What is a 'derecho' and are there any active warnings for them?"
+        - **Step 1:** Call `google_search_agent` to get the definition of "derecho".
+        - **Step 2:** Call `weather_alerts_snapshot_agent` with a query like "active derecho warnings" to find relevant alerts.
+        - **Step 3:** Present the definition first, followed by any active warnings found.
+
         **IMPORTANT:**
-        - Delegate immediately to the appropriate remote agent
-        - Remote agents are deployed on Cloud Run and handle the complete process
-        - Agents return structured data with insights
-        - Pass the user's query directly to the selected agent
-        - Present the agent's response in a clear, conversational format
+        - If a query is simple, delegate to a single agent.
+        - If a query is complex, orchestrate a sequence of agent calls.
+        - Always synthesize the final results into a user-friendly format.
+
+        **OUTPUT FORMATTING:**
+        - **Always** use Markdown for formatting.
+        - Use **bold text** for headings and key terms (e.g., **Location:**, **Current Temperature:**).
+        - Use bullet points (`-`) for lists (e.g., forecast details, alert summaries).
+        - Present the final output from the delegated agent in a clean, well-structured, and conversational format.
         """,
         tools=[
             AgentTool(alerts_agent_remote),
@@ -103,6 +133,7 @@ if USE_REMOTE_AGENTS:
             AgentTool(emergency_resources_agent_remote),
             AgentTool(hurricane_agent_remote),
             AgentTool(GoogleSearchAgent),
+            AgentTool(weather_map_agent),
         ],
         before_model_callback=log_agent_entry,
         after_model_callback=log_agent_exit,
@@ -146,12 +177,42 @@ else:
         - **General Knowledge/Web Search** → google_search_agent
           Keywords: who is, what is, when did, explain, search for
           Example: "Who is the current CEO of Google?" or "What is the capital of Mongolia?"
+
+        - **Map Generation/Visualization** → weather_map_agent
+          Keywords: map, draw, visualize, plot, show on map
+          Example: "Draw a map of the affected zones" or "Show me these alerts on a map"
         
+        **MULTI-STEP TASK EXECUTION:**
+        - For complex queries, you must break down the task and call tools in a logical sequence. Synthesize the results into one final answer.
+
+        **Example 1: Alerts + Risk Analysis**
+        - **Query:** "Analyze the risks for active alerts in Florida."
+        - **Step 1:** Call `alerts_snapshot_pipeline` for "Florida" to get active alerts.
+        - **Step 2:** Take the resulting alert information and pass it to `risk_analysis_pipeline`.
+        - **Step 3:** Synthesize the alert details and the risk analysis into a comprehensive summary.
+
+        **Example 2: Alerts + Map**
+        - **Query:** "Show me the alerts in Texas on a map."
+        - **Step 1:** Call `alerts_snapshot_pipeline` for "Texas" to get alert details and affected zones.
+        - **Step 2:** Extract the `affected_zones` from the result and pass them to `weather_map_agent`.
+        - **Step 3:** Combine the text-based alert summary and the generated map into the final response.
+
+        **Example 3: General Knowledge + Alerts**
+        - **Query:** "What is a 'derecho' and are there any active warnings for them?"
+        - **Step 1:** Call `google_search_agent` to get the definition of "derecho".
+        - **Step 2:** Call `alerts_snapshot_pipeline` with a query like "active derecho warnings" to find relevant alerts.
+        - **Step 3:** Present the definition first, followed by any active warnings found.
+
         **IMPORTANT:**
-        - Delegate immediately to the appropriate workflow
-        - Each workflow will handle the complete multi-step process
-        - Workflows return structured data with insights
-        - Pass the user's query directly to the selected workflow
+        - If a query is simple, delegate to a single workflow.
+        - If a query is complex, orchestrate a sequence of workflow calls.
+        - Always synthesize the final results into a user-friendly format.
+
+        **OUTPUT FORMATTING:**
+        - **Always** use Markdown for formatting.
+        - Use **bold text** for headings and key terms (e.g., **Location:**, **Current Temperature:**).
+        - Use bullet points (`-`) for lists (e.g., forecast details, alert summaries).
+        - Present the final output from the delegated agent in a clean, well-structured, and conversational format.
         """,
         tools=[
             AgentTool(alerts_snapshot_workflow),
@@ -160,6 +221,7 @@ else:
             AgentTool(emergency_resources_workflow),
             AgentTool(hurricane_analysis_workflow),
             AgentTool(GoogleSearchAgent),
+            AgentTool(weather_map_agent),
         ],
         before_model_callback=log_agent_entry,
         after_model_callback=log_agent_exit,

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "google-adk>=1.10.0",
+    "a2a-sdk>=0.2.5",
     "google-cloud-bigquery",
     "google-cloud-logging",
     "python-dotenv",
@@ -15,10 +16,15 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "httpx",
     "google-generativeai",
+    "folium",
 ]
 
-[tool.setuptools]
-packages = ["weather_insights_agent", "weather_insights_agent.weather_tools"]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agents*", "shared_tools*"]
 py-modules = []
 
 [tool.setuptools.package-data]

@@ -47,14 +47,6 @@ const Dashboard = () => {
   const [selectedRegion, setSelectedRegion] = useState(() => {
     return localStorage.getItem('dashboardSelectedRegion') || 'National';
   });
-  const [alertMarkers, setAlertMarkers] = useState(() => {
-    const saved = localStorage.getItem('dashboardMarkers');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [mapCenter, setMapCenter] = useState(() => {
-    const saved = localStorage.getItem('dashboardMapCenter');
-    return saved ? JSON.parse(saved) : [39.8283, -98.5795];
-  });
   const [severeEvents, setSevereEvents] = useState(() => {
     const saved = localStorage.getItem('dashboardSevereEvents');
     return saved ? JSON.parse(saved) : [];
@@ -82,13 +74,6 @@ const Dashboard = () => {
     localStorage.setItem('dashboardFilter', selectedFilter);
   }, [selectedFilter]);
 
-  useEffect(() => {
-    if (alertMarkers.length > 0) localStorage.setItem('dashboardMarkers', JSON.stringify(alertMarkers));
-  }, [alertMarkers]);
-
-  useEffect(() => {
-    if (mapCenter) localStorage.setItem('dashboardMapCenter', JSON.stringify(mapCenter));
-  }, [mapCenter]);
 
   useEffect(() => {
     if (severeEvents.length > 0) localStorage.setItem('dashboardSevereEvents', JSON.stringify(severeEvents));
@@ -122,13 +107,6 @@ const Dashboard = () => {
         setSelectedRegion('South');
         setSelectedFilter('region');
         
-        // Set mock map data
-        if (mockDashboardData.map_data) {
-          setAlertMarkers(mockDashboardData.map_data.markers || []);
-          if (mockDashboardData.map_data.center) {
-            setMapCenter([mockDashboardData.map_data.center.lat, mockDashboardData.map_data.center.lng]);
-          }
-        }
         
         // Auto-trigger risk analysis popup at the risk-analysis tour step
         if (currentStepId === 'risk-analysis' && mockDashboardData.alerts.length > 0) {
@@ -178,8 +156,6 @@ const Dashboard = () => {
       setAgentResponse('');
       setLocation('');
       setSelectedFilter('');
-      setAlertMarkers([]);
-      setMapCenter([39.8283, -98.5795]);
       setSevereEvents([]);
       setAlerts([]);
       localStorage.removeItem('dashboardSevereEvents');
@@ -223,7 +199,7 @@ const Dashboard = () => {
     }
   };
 
-  const loadAlerts = async (currentLocation) => {
+    const loadAlerts = async (currentLocation) => {
     if (loading) return;
     setLoading(true);
     setAlerts([]);
@@ -234,76 +210,11 @@ const Dashboard = () => {
         setAlerts(response.alerts);
         if (response.alerts.length > 0) {
           setAgentResponse(`Found ${response.alerts.length} alerts for ${currentLocation}.`);
-          
-          // Handle map_data with proper structure parsing
-          if (response.map_data) {
-            console.log('[Dashboard] Location-specific map data:', response.map_data);
-            
-            // Set map center if available
-            if (response.map_data.center) {
-              const newCenter = [response.map_data.center.lat, response.map_data.center.lng];
-              console.log('[Dashboard] Setting map center to:', newCenter);
-              setMapCenter(newCenter);
-            } else {
-              console.log('[Dashboard] No map center in response, keeping current center');
-            }
-            
-            // Handle markers with flexible structure parsing
-            let markers = [];
-            if (response.map_data.markers && Array.isArray(response.map_data.markers) && response.map_data.markers.length > 0) {
-              markers = response.map_data.markers;
-              console.log('[Dashboard] Using location-specific markers array:', markers);
-            } else if (typeof response.map_data === 'object' && Object.keys(response.map_data).length > 0) {
-              // Handle object structure like {location: {lat, lng, ...}}
-              markers = Object.entries(response.map_data)
-                .filter(([key, value]) => key !== 'center' && key !== 'zoom' && key !== 'map_url')
-                .map(([location, data]) => ({
-                  lat: data.lat || 39.8283,
-                  lng: data.lng || -98.5795,
-                  title: location,
-                  address: data.address || ''
-                }));
-              console.log('[Dashboard] Using location-specific map data object:', markers);
-            }
-            setAlertMarkers(markers);
-          } else {
-            // No map data, clear markers
-            setAlertMarkers([]);
-          }
         } else {
           setAgentResponse(`No active alerts found for ${currentLocation}.`);
-          setAlertMarkers([]); // Clear markers when no alerts are found
         }
       } else {
-        setAgentResponse(response?.content || `No active alerts found for ${currentLocation}.`);
-        
-        // Handle map_data even when no structured alerts
-        if (response.map_data) {
-          console.log('[Dashboard] Location-specific map data (no alerts):', response.map_data);
-          
-          if (response.map_data.center) {
-            const newCenter = [response.map_data.center.lat, response.map_data.center.lng];
-            console.log('[Dashboard] Setting map center (no alerts) to:', newCenter);
-            setMapCenter(newCenter);
-          }
-          
-          let markers = [];
-          if (response.map_data.markers && Array.isArray(response.map_data.markers)) {
-            markers = response.map_data.markers;
-          } else if (typeof response.map_data === 'object') {
-            markers = Object.entries(response.map_data)
-              .filter(([key, value]) => key !== 'center' && key !== 'zoom' && key !== 'map_url')
-              .map(([location, data]) => ({
-                lat: data.lat || 39.8283,
-                lng: data.lng || -98.5795,
-                title: location,
-                address: data.address || ''
-              }));
-          }
-          setAlertMarkers(markers);
-        } else {
-          setAlertMarkers([]);
-        }
+        setAgentResponse(response?.insights || `No active alerts found for ${currentLocation}.`);
       }
     } catch (error) {
       console.error('Failed to load alerts:', error);
@@ -445,105 +356,24 @@ const Dashboard = () => {
     return events.slice(0, 6);
   };
 
-  const loadNationalSevereAlerts = async () => {
+    const loadNationalSevereAlerts = async () => {
     if (loading) return;
-    
     setLoading(true);
-    
-    // Set a timeout to prevent indefinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('[Dashboard] National alerts loading timeout - falling back to major states');
-      setLoading(false);
-    }, 75000); // 75 second timeout
-    
     try {
       console.log('[Dashboard] Loading national severe alerts...');
-      
-      // Try different location formats to get national alerts
-      // Start with major regions/states that are likely to have alerts
-      let response = null;
-      const locationOptions = [
-        'United States', // Try national first since we optimized it
-        'Florida', 'Texas', 'California', 'Louisiana', 'North Carolina'
-      ];
-      
-      for (const location of locationOptions) {
-        try {
-          console.log(`[Dashboard] Trying location: ${location}`);
-          response = await api.getAlerts(location);
-          if (response && response.alerts && response.alerts.length > 0) {
-            console.log(`[Dashboard] Success with location: ${location}, found ${response.alerts.length} alerts`);
-            break;
-          }
-        } catch (err) {
-          console.log(`[Dashboard] Failed with location ${location}:`, err.message);
-          continue;
-        }
-      }
-      
-      clearTimeout(timeoutId); // Clear timeout if we succeed
-      
+      const response = await api.getAlerts('United States');
       if (response && response.alerts && response.alerts.length > 0) {
-        console.log('[Dashboard] Raw alerts response:', response.alerts);
-        
-        // Sort alerts by severity and take top 3
         const sortedAlerts = response.alerts.sort((a, b) => {
           const severityOrder = { 'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1, 'Unknown': 0 };
-          const aSeverity = severityOrder[a.severity] || 0;
-          const bSeverity = severityOrder[b.severity] || 0;
-          console.log(`[Dashboard] Comparing ${a.event} (${a.severity}=${aSeverity}) vs ${b.event} (${b.severity}=${bSeverity})`);
-          return bSeverity - aSeverity;
+          return (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
         });
-        
-        const topAlerts = sortedAlerts.slice(0, 3);
-        setAlerts(topAlerts);
-        
-        // Use map_data markers if available, otherwise create default markers
-        let markers = [];
-        if (response.map_data) {
-          console.log('[Dashboard] Map data structure:', response.map_data);
-          
-          // Check if map_data has markers array (new structure)
-          if (response.map_data.markers && Array.isArray(response.map_data.markers) && response.map_data.markers.length > 0) {
-            markers = response.map_data.markers.slice(0, 3); // Limit to top 3 to match alerts
-            console.log('[Dashboard] Using backend map markers array:', markers);
-          } 
-          // Check if map_data is an object with location keys (alternative structure)
-          else if (typeof response.map_data === 'object' && Object.keys(response.map_data).length > 0) {
-            markers = Object.entries(response.map_data).slice(0, 3).map(([location, data]) => ({
-              lat: data.lat || 39.8283,
-              lng: data.lng || -98.5795,
-              title: location,
-              address: data.address || ''
-            }));
-            console.log('[Dashboard] Using backend map data object:', markers);
-          }
-        }
-        
-        // Fallback: create markers from alerts if no map data
-        if (markers.length === 0) {
-          markers = topAlerts.map((alert, index) => ({
-            lat: 39.8283, // Default center of US
-            lng: -98.5795,
-            title: `${alert.event} - ${alert.severity}`,
-            address: 'Location unavailable'
-          }));
-          console.log('[Dashboard] Using fallback markers (no coordinates):', markers);
-        }
-        
-        setAlertMarkers(markers);
-        
-        console.log(`[Dashboard] Successfully loaded ${topAlerts.length} national severe alerts:`, topAlerts);
+        setAlerts(sortedAlerts.slice(0, 3));
       } else {
-        console.log('[Dashboard] No severe alerts found nationally - response:', response);
         setAlerts([]);
-        setAlertMarkers([]);
       }
     } catch (error) {
       console.error('[Dashboard] Failed to load national severe alerts:', error);
-      clearTimeout(timeoutId); // Clear timeout on error
       setAlerts([]);
-      setAlertMarkers([]);
     } finally {
       setLoading(false);
     }
@@ -616,14 +446,10 @@ const Dashboard = () => {
     localStorage.removeItem('dashboardResponse');
     localStorage.removeItem('dashboardLocation');
     localStorage.removeItem('dashboardFilter');
-    localStorage.removeItem('dashboardMarkers');
-    localStorage.removeItem('dashboardMapCenter');
     localStorage.removeItem('dashboardSevereEvents');
     localStorage.removeItem('dashboardAlerts');
     setLocation('');
     setSelectedFilter('');
-    setAlertMarkers([]);
-    setMapCenter([39.8283, -98.5795]);
     setSevereEvents([]);
     setAlerts([]);
     setAgentResponse('');
@@ -960,45 +786,23 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Weather Context Map with Alert Markers */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6" data-tour-id="map-section">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            📍 {location || (alertMarkers && alertMarkers.length > 0 ? 'United States' : 'Select Location')} {alertMarkers && alertMarkers.length > 0 && `(${alertMarkers.length} Alert Zone${alertMarkers.length > 1 ? 's' : ''})`}
-          </h2>
-          <LocationMap 
-            markers={alertMarkers}
-            center={mapCenter}
-            height="400px" 
-          />
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>💡 Tip:</strong> {alertMarkers && alertMarkers.length > 0 ? 'Red markers show areas with active weather alerts. Click markers for location details.' : 'Use the filters above to view alerts by region, state, or custom location.'}
-              {' '}For emergency resources, use <strong>Emergency Resources</strong> to find shelters or hospitals.
-            </p>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="space-y-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.name}
-                  to={action.href}
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
-                >
-                  <div className={`${action.color} p-2 rounded-lg`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{action.name}</span>
-                </Link>
-              );
-            })}
-          </div>
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.name}
+                to={action.href}
+                className={`flex flex-col items-center justify-center text-center p-4 rounded-lg transition-all ${action.color} text-white hover:opacity-90 shadow-md`}
+              >
+                <Icon className="h-8 w-8 mb-2" />
+                <span className="font-semibold text-sm">{action.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

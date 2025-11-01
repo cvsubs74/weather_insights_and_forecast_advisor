@@ -8,8 +8,9 @@ const Alerts = () => {
   const [agentResponse, setAgentResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [location] = useState('California');
-  const [alertMarkers, setAlertMarkers] = useState([]);
-  const [mapCenter, setMapCenter] = useState(null);
+  const [mapData, setMapData] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [mapLoading, setMapLoading] = useState(false);
   
   // Helper function to get severity emoji
   const getSeverityEmoji = (severity) => {
@@ -27,125 +28,42 @@ const Alerts = () => {
 
   const loadAlerts = async () => {
     setLoading(true);
+    setAgentResponse('');
+    setShowMap(false);
+    setMapData(null);
     try {
       const response = await api.getAlerts(location);
-      
-      // California center as default
-      const californiaCenter = [36.7783, -119.4179];
-      const locationMap = {
-        'San Francisco': [37.7749, -122.4194],
-        'Los Angeles': [34.0522, -118.2437],
-        'San Diego': [32.7157, -117.1611],
-        'Sacramento': [38.5816, -121.4944],
-        'Eureka': [40.8021, -124.1637],
-        'Monterey': [36.6002, -121.8947],
-        'Santa Barbara': [34.4208, -119.6982],
-        'San Luis Obispo': [35.2828, -120.6596],
-        'Mendocino': [39.3077, -123.7994],
-        'Del Norte': [41.7443, -124.1337],
-        'Humboldt': [40.7450, -123.8695],
-        'Phoenix': [33.4484, -112.0740]
-      };
-      
-      // Check if we have structured alerts from JSON
-      if (response && response.alerts && Array.isArray(response.alerts) && response.alerts.length > 0) {
-        console.log('[Alerts] Using structured alerts from JSON:', response.alerts);
-        
-        // Create user-friendly formatted text response
-        const alertCount = response.alerts.length;
-        const formattedText = `# 🚨 Active Weather Alerts for ${location}\n\n` +
-          `Found **${alertCount}** active alert${alertCount !== 1 ? 's' : ''}:\n\n---\n\n` +
-          response.alerts.map((alert, index) => 
-            `### ${index + 1}. ${alert.event}\n\n` +
-            `**Severity:** ${getSeverityEmoji(alert.severity)} ${alert.severity}\n\n` +
-            `**Details:** ${alert.headline}\n\n---`
-          ).join('\n\n');
-        
-        setAgentResponse(formattedText);
-        
-        // Extract markers from headlines
-        const markers = [];
-        response.alerts.forEach(alert => {
-          Object.entries(locationMap).forEach(([name, coords]) => {
-            if (alert.headline.toLowerCase().includes(name.toLowerCase())) {
-              markers.push({
-                lat: coords[0],
-                lng: coords[1],
-                title: name,
-                address: alert.event
-              });
-            }
-          });
-        });
-        
-        setAlertMarkers(markers);
-        setMapCenter(markers.length > 0 ? [markers[0].lat, markers[0].lng] : californiaCenter);
-      } else if (response && response.content) {
-        // Fallback: Try to parse JSON from content
-        try {
-          const jsonMatch = response.content.match(/\{[\s\S]*"alerts"[\s\S]*\}/);
-          if (jsonMatch) {
-            const jsonData = JSON.parse(jsonMatch[0]);
-            if (jsonData.alerts && Array.isArray(jsonData.alerts)) {
-              const alertCount = jsonData.alerts.length;
-              const formattedText = `# 🚨 Active Weather Alerts for ${location}\n\n` +
-                `Found **${alertCount}** active alert${alertCount !== 1 ? 's' : ''}:\n\n---\n\n` +
-                jsonData.alerts.map((alert, index) => 
-                  `### ${index + 1}. ${alert.event}\n\n` +
-                  `**Severity:** ${getSeverityEmoji(alert.severity)} ${alert.severity}\n\n` +
-                  `**Details:** ${alert.headline}\n\n---`
-                ).join('\n\n');
-              
-              setAgentResponse(formattedText);
-              
-              // Extract markers
-              const markers = [];
-              jsonData.alerts.forEach(alert => {
-                Object.entries(locationMap).forEach(([name, coords]) => {
-                  if (alert.headline.toLowerCase().includes(name.toLowerCase())) {
-                    markers.push({
-                      lat: coords[0],
-                      lng: coords[1],
-                      title: name,
-                      address: alert.event
-                    });
-                  }
-                });
-              });
-              
-              setAlertMarkers(markers);
-              setMapCenter(markers.length > 0 ? [markers[0].lat, markers[0].lng] : californiaCenter);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error('[Alerts] Failed to parse JSON from content:', e);
-        }
-        
-        // If no JSON found, use raw content
-        setAgentResponse(response.content);
-        
-        // Parse markers from raw content
-        const markers = [];
-        Object.entries(locationMap).forEach(([name, coords]) => {
-          if (response.content.toLowerCase().includes(name.toLowerCase())) {
-            markers.push({
-              lat: coords[0],
-              lng: coords[1],
-              title: name,
-              address: 'Alert Zone'
-            });
-          }
-        });
-        
-        setAlertMarkers(markers);
-        setMapCenter(markers.length > 0 ? [markers[0].lat, markers[0].lng] : californiaCenter);
+      if (response && response.alerts) {
+        setAgentResponse(response);
+      } else {
+        // Handle cases where response is not in the expected format
+        setAgentResponse({ alerts: [], insights: 'Could not retrieve structured alert data.' });
       }
     } catch (error) {
       console.error('Failed to load alerts:', error);
-      setAgentResponse('Failed to load alerts. Please try again.');
+      setAgentResponse({ alerts: [], insights: 'Failed to load alerts. Please try again.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShowMap = async () => {
+    if (!agentResponse || !agentResponse.alerts) return;
+
+    setMapLoading(true);
+    setShowMap(true);
+    try {
+      const allZones = agentResponse.alerts.flatMap(alert => alert.affected_zones);
+      const uniqueZones = [...new Set(allZones)];
+      
+      const mapApiResponse = await api.getMapForZones(uniqueZones);
+      if (mapApiResponse && mapApiResponse.map_data) {
+        setMapData(mapApiResponse.map_data);
+      }
+    } catch (error) {
+      console.error('Failed to load map data:', error);
+    } finally {
+      setMapLoading(false);
     }
   };
 
@@ -163,23 +81,25 @@ const Alerts = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Alert Map */}
-        {!loading && alertMarkers.length > 0 && (
+        {showMap && (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              📍 Alert Zones ({alertMarkers.length})
-            </h3>
-            <LocationMap 
-              markers={alertMarkers}
-              height="450px" 
-            />
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-gray-700">
-                <strong>Alert Locations:</strong> {location}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                Red markers show areas with active weather alerts. Click markers for location details.
-              </p>
-            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">📍 Alert Zones</h3>
+            {mapLoading ? (
+              <div className="flex justify-center items-center h-[450px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : mapData ? (
+              <LocationMap 
+                markers={mapData.markers}
+                center={mapData.center}
+                zoom={mapData.zoom}
+                height="450px" 
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500 h-[450px]">
+                <p>Could not load map data.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -189,8 +109,16 @@ const Alerts = () => {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-          ) : agentResponse ? (
+          ) : agentResponse && agentResponse.alerts ? (
             <div className="space-y-4">
+              {!showMap && agentResponse.alerts.length > 0 && (
+                <button 
+                  onClick={handleShowMap}
+                  className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300 mb-4"
+                >
+                  Show on Map
+                </button>
+              )}
               <ReactMarkdown
                 components={{
                   h1: ({node, ...props}) => <h1 className="text-xl font-bold text-gray-900 mb-3" {...props} />,
@@ -203,7 +131,10 @@ const Alerts = () => {
                   hr: ({node, ...props}) => <hr className="my-6 border-gray-300" {...props} />,
                 }}
               >
-                {agentResponse}
+                {`# 🚨 Active Weather Alerts for ${location}\n\n` +
+                  `Found **${agentResponse.alerts.length}** active alert${agentResponse.alerts.length !== 1 ? 's' : ''}.\n\n` +
+                  `**Insights:** ${agentResponse.insights}`
+                }
               </ReactMarkdown>
             </div>
           ) : (
