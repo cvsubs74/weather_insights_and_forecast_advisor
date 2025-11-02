@@ -629,6 +629,28 @@ def get_nws_alerts(
         
         # Filter for only Extreme and Severe alerts
         alerts = [alert for alert in alerts if alert.get('severity') in ['Extreme', 'Severe']]
+        
+        # Filter out expired alerts
+        from datetime import timezone
+        current_time = datetime.now(timezone.utc)
+        active_alerts = []
+        for alert in alerts:
+            expires = alert.get('expires')
+            if expires:
+                try:
+                    # Parse ISO 8601 format datetime
+                    expire_time = datetime.fromisoformat(expires.replace('Z', '+00:00'))
+                    # Only include if not expired
+                    if expire_time > current_time:
+                        active_alerts.append(alert)
+                except (ValueError, AttributeError):
+                    # If we can't parse the expiration, include the alert to be safe
+                    active_alerts.append(alert)
+            else:
+                # If no expiration time, include the alert
+                active_alerts.append(alert)
+        
+        alerts = active_alerts
 
         # For large alert sets, only return top critical alerts to prevent timeout
         total_count = len(alerts)

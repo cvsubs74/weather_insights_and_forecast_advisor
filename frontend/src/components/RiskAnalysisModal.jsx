@@ -1,5 +1,17 @@
 import React from 'react';
-import { XMarkIcon, ShieldCheckIcon, ExclamationTriangleIcon, InformationCircleIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { 
+  XMarkIcon, 
+  ShieldCheckIcon, 
+  ExclamationTriangleIcon, 
+  InformationCircleIcon, 
+  LinkIcon,
+  BoltIcon,
+  BuildingOffice2Icon,
+  FireIcon,
+  HeartIcon,
+  TruckIcon,
+  MapPinIcon
+} from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
 
 const RiskAnalysisModal = ({ isOpen, onClose, analysis, isLoading, alert }) => {
@@ -27,49 +39,173 @@ const RiskAnalysisModal = ({ isOpen, onClose, analysis, isLoading, alert }) => {
             </div>
           ) : analysis ? (
             <div className="space-y-6">
+              {/* Alert Summary */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
                   <ShieldCheckIcon className="h-6 w-6 mr-2 text-blue-600" />
                   Alert Summary
                 </h3>
-                <p className="text-sm mt-1 bg-gray-100 p-3 rounded-lg">{analysis.alert_summary}</p>
+                <p className="text-sm mt-1 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-600">{analysis.alert_summary}</p>
               </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                  <ExclamationTriangleIcon className="h-6 w-6 mr-2 text-yellow-600" />
-                  Potential Impacts
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  {analysis.potential_impacts?.map((item, index) => (
-                    <p key={index}><ReactMarkdown>{item}</ReactMarkdown></p>
-                  ))}
+              {/* Real-Time Impacts */}
+              {analysis.real_time_impacts && analysis.real_time_impacts.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <BoltIcon className="h-6 w-6 mr-2 text-orange-600" />
+                    Real-Time Impacts
+                  </h3>
+                  <ul className="space-y-2 text-gray-700">
+                    {analysis.real_time_impacts.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-orange-600 mr-2">•</span>
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                  <InformationCircleIcon className="h-6 w-6 mr-2 text-green-600" />
-                  Safety Recommendations
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  {analysis.safety_recommendations?.map((item, index) => (
-                    <p key={index}><ReactMarkdown>{item}</ReactMarkdown></p>
-                  ))}
+              {/* Infrastructure Damage */}
+              {analysis.infrastructure_damage && analysis.infrastructure_damage.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <BuildingOffice2Icon className="h-6 w-6 mr-2 text-red-600" />
+                    Infrastructure Damage
+                  </h3>
+                  <ul className="space-y-2 text-gray-700">
+                    {analysis.infrastructure_damage.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-red-600 mr-2">•</span>
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
 
+              {/* Hazards and Dangers */}
+              {analysis.hazards_and_dangers && analysis.hazards_and_dangers.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <FireIcon className="h-6 w-6 mr-2 text-yellow-600" />
+                    Hazards & Dangers
+                  </h3>
+                  <ul className="space-y-2 text-gray-700 bg-yellow-50 p-3 rounded-lg">
+                    {analysis.hazards_and_dangers.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-yellow-600 mr-2">⚠️</span>
+                        <span className="text-sm font-medium">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Injuries and Casualties */}
+              {analysis.injuries_and_casualties && analysis.injuries_and_casualties.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <HeartIcon className="h-6 w-6 mr-2 text-pink-600" />
+                    Injuries & Casualties
+                  </h3>
+                  <ul className="space-y-2 text-gray-700">
+                    {analysis.injuries_and_casualties.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-pink-600 mr-2">•</span>
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Safety Recommendations */}
+              {analysis.safety_recommendations && analysis.safety_recommendations.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <InformationCircleIcon className="h-6 w-6 mr-2 text-green-600" />
+                    Safety Recommendations
+                  </h3>
+                  <ul className="space-y-2 text-gray-700 bg-green-50 p-3 rounded-lg">
+                    {analysis.safety_recommendations.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-green-600 mr-2">✓</span>
+                        <span className="text-sm font-medium">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Emergency Response */}
+              {analysis.emergency_response && analysis.emergency_response.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <TruckIcon className="h-6 w-6 mr-2 text-purple-600" />
+                    Emergency Response
+                  </h3>
+                  <ul className="space-y-2 text-gray-700">
+                    {analysis.emergency_response.map((item, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-purple-600 mr-2">•</span>
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Affected Areas */}
+              {analysis.affected_areas && analysis.affected_areas.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <MapPinIcon className="h-6 w-6 mr-2 text-indigo-600" />
+                    Affected Areas
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {analysis.affected_areas.map((area, index) => (
+                      <span key={index} className="inline-block bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full">
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Supporting Links */}
               {analysis.supporting_links && analysis.supporting_links.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
                     <LinkIcon className="h-6 w-6 mr-2 text-gray-500" />
-                    Supporting Links
+                    Official Sources & News
                   </h3>
                   <div className="space-y-2">
-                    {analysis.supporting_links?.map((link, index) => (
-                      <a key={index} href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        {link}
+                    {analysis.supporting_links.map((link, index) => (
+                      <a 
+                        key={index} 
+                        href={link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="block text-blue-600 hover:text-blue-800 hover:underline text-sm break-all"
+                      >
+                        🔗 {link}
                       </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fallback for old format (potential_impacts) */}
+              {analysis.potential_impacts && !analysis.real_time_impacts && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                    <ExclamationTriangleIcon className="h-6 w-6 mr-2 text-yellow-600" />
+                    Potential Impacts
+                  </h3>
+                  <div className="space-y-2 text-gray-700">
+                    {analysis.potential_impacts.map((item, index) => (
+                      <p key={index}><ReactMarkdown>{item}</ReactMarkdown></p>
                     ))}
                   </div>
                 </div>

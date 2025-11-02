@@ -1,0 +1,29 @@
+{
+  "hosting": {
+    "site": "weather-insights-advisor",
+    "public": "frontend/build",
+    "ignore": [
+      "firebase.json",
+      "firebase.agents.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
+      }
+    ]
+  }
+}
