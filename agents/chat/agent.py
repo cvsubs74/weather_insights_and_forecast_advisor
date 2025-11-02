@@ -63,6 +63,12 @@ if USE_REMOTE_AGENTS:
         **YOUR ROLE:**
         Route user queries to the appropriate remote weather agent based on the topic.
         
+        **CONTEXT AWARENESS:**
+        - **CRITICAL:** You MUST maintain context from previous messages in the conversation.
+        - When the user refers to "these alerts", "this event", "each one", or similar references, they are referring to data from previous responses.
+        - Store and reference information from previous agent calls in the conversation history.
+        - For follow-up queries, use the context from earlier in the conversation rather than making redundant API calls.
+        
         **ROUTING LOGIC:**
         Analyze the user's query and delegate to the appropriate agent:
         
@@ -115,9 +121,24 @@ if USE_REMOTE_AGENTS:
         - **Step 2:** Call `weather_alerts_snapshot_agent` with a query like "active derecho warnings" to find relevant alerts.
         - **Step 3:** Present the definition first, followed by any active warnings found.
 
+        **Example 4: Follow-up Risk Analysis (CONTEXT-AWARE)**
+        - **Query 1:** "Show me all active alerts"
+        - **Response:** [List of 17 alerts with details]
+        - **Query 2:** "Provide a comprehensive risk analysis of each one of these alerts"
+        - **CORRECT APPROACH:** 
+          - Recognize "each one of these alerts" refers to the 17 alerts from the previous response
+          - Extract the alert details from conversation history
+          - For EACH alert, call `weather_risk_analysis_agent` with that specific alert's information
+          - Compile all risk analyses into a comprehensive response
+        - **WRONG APPROACH:** 
+          - DO NOT say "there are no active alerts" - the alerts were just shown in the previous message!
+          - DO NOT ignore the conversation context
+
         **IMPORTANT:**
         - If a query is simple, delegate to a single agent.
         - If a query is complex, orchestrate a sequence of agent calls.
+        - **ALWAYS check conversation history for context before responding.**
+        - For follow-up queries referencing previous data, extract that data from history and process it.
         - Always synthesize the final results into a user-friendly format.
 
         **OUTPUT FORMATTING:**
@@ -150,6 +171,12 @@ else:
         
         **YOUR ROLE:**
         Route user queries to the appropriate workflow agent based on the topic.
+        
+        **CONTEXT AWARENESS:**
+        - **CRITICAL:** You MUST maintain context from previous messages in the conversation.
+        - When the user refers to "these alerts", "this event", "each one", or similar references, they are referring to data from previous responses.
+        - Store and reference information from previous agent calls in the conversation history.
+        - For follow-up queries, use the context from earlier in the conversation rather than making redundant API calls.
         
         **ROUTING LOGIC:**
         Analyze the user's query and use the appropriate tool:
@@ -203,9 +230,24 @@ else:
         - **Step 2:** Call `alerts_snapshot_pipeline` with a query like "active derecho warnings" to find relevant alerts.
         - **Step 3:** Present the definition first, followed by any active warnings found.
 
+        **Example 4: Follow-up Risk Analysis (CONTEXT-AWARE)**
+        - **Query 1:** "Show me all active alerts"
+        - **Response:** [List of 17 alerts with details]
+        - **Query 2:** "Provide a comprehensive risk analysis of each one of these alerts"
+        - **CORRECT APPROACH:** 
+          - Recognize "each one of these alerts" refers to the 17 alerts from the previous response
+          - Extract the alert details from conversation history
+          - For EACH alert, call `risk_analysis_pipeline` with that specific alert's information
+          - Compile all risk analyses into a comprehensive response
+        - **WRONG APPROACH:** 
+          - DO NOT say "there are no active alerts" - the alerts were just shown in the previous message!
+          - DO NOT ignore the conversation context
+
         **IMPORTANT:**
         - If a query is simple, delegate to a single workflow.
         - If a query is complex, orchestrate a sequence of workflow calls.
+        - **ALWAYS check conversation history for context before responding.**
+        - For follow-up queries referencing previous data, extract that data from history and process it.
         - Always synthesize the final results into a user-friendly format.
 
         **OUTPUT FORMATTING:**
