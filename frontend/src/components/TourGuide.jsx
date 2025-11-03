@@ -159,7 +159,7 @@ const TourGuide = () => {
   return (
     <>
       {/* Bottom banner - compact and thin */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 animate-slideUp shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] animate-slideUp shadow-2xl">
         <div className="bg-white border-t-2 border-yellow-400">
           {/* Compact single-line layout */}
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 px-4 py-2">

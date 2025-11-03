@@ -43,6 +43,20 @@ export const mockDashboardData = {
       end_time: "2024-10-09T18:00:00Z",
       urgency: "Immediate",
       certainty: "Observed"
+    },
+    {
+      id: "4",
+      event: "High Wind Warning",
+      severity: "Severe",
+      area: "Rocky Mountains",
+      headline: "High Wind Warning in effect for mountain areas",
+      description: "West winds 40 to 50 mph with gusts up to 75 mph expected. Damaging winds will blow down trees and power lines. Travel will be difficult, especially for high profile vehicles.",
+      instruction: "Secure loose objects. Avoid travel if possible. Use caution if you must travel.",
+      onset: new Date().toISOString(),
+      expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      end_time: "2024-10-10T02:00:00Z",
+      urgency: "Expected",
+      certainty: "Likely"
     }
   ],
   map_data: {
@@ -86,8 +100,8 @@ export const mockDashboardData = {
       }
     ]
   },
-  total_count: 3,
-  severe_count: 3,
+  total_count: 4,
+  severe_count: 4,
   insights: "🚨 CRITICAL SITUATION: Category 4 Hurricane Milton poses extreme threat to Gulf Coast. Immediate evacuation required for coastal zones. Multiple severe weather threats across the nation including tornadoes in Texas and flash flooding in California."
 };
 

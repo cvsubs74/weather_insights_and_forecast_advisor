@@ -35,27 +35,43 @@ export const TourProvider = ({ children }) => {
       position: 'bottom'
     },
     {
-      id: 'dashboard-alerts',
-      title: '⚠️ Critical Alerts Dashboard',
-      description: 'The dashboard shows active severe weather alerts. Right now, Hurricane Milton (Category 4) is approaching the Gulf Coast with life-threatening conditions.',
+      id: 'dashboard-alerts-scroll',
+      title: '⚠️ Severe Weather Alerts',
+      description: 'Below the selectors, you\'ll see 4 active weather alert cards. Notice Hurricane Milton (Category 4) - the most critical threat. Each card shows the alert type, severity, location, and key details. You can scroll through multiple alerts using the navigation arrows.',
+      page: '/',
+      highlight: 'alerts-section',
+      position: 'top'
+    },
+    {
+      id: 'risk-analysis-button',
+      title: '📊 Comprehensive Risk Analysis',
+      description: 'Watch as we automatically open the risk analysis for Hurricane Milton. This shows 8 categories of real-time intelligence: current impacts, infrastructure damage, active hazards, injuries/casualties, safety recommendations, emergency response, affected areas, and official sources.',
+      page: '/',
+      highlight: 'alerts-section',
+      position: 'top'
+    },
+    {
+      id: 'risk-analysis-modal',
+      title: '🔍 Detailed Risk Information',
+      description: 'Review the comprehensive risk analysis modal. Notice how it provides specific, actionable information across multiple categories - all powered by live web searches and AI analysis. This helps you understand the full scope of the threat.',
+      page: '/',
+      highlight: 'alerts-section',
+      position: 'top'
+    },
+    {
+      id: 'show-map-button',
+      title: '🗺️ Map Visualization',
+      description: 'Now we\'ll automatically close the risk analysis and show you the alert on the map. The map helps you visualize the geographic extent of the threat and affected areas.',
       page: '/',
       highlight: 'alerts-section',
       position: 'top'
     },
     {
       id: 'dashboard-map',
-      title: '🗺️ Interactive Alert Map',
-      description: 'The map visualizes alert locations. Red markers indicate extreme threats. You can see the hurricane warning zone covering Tampa Bay.',
+      title: '📍 Interactive Alert Map',
+      description: 'Scroll down to see the interactive map. Red markers indicate extreme threats. The map shows the geographic extent of alerts and helps you understand which areas are affected.',
       page: '/',
-      highlight: 'map-section',
-      position: 'top'
-    },
-    {
-      id: 'risk-analysis',
-      title: '📊 AI Risk Analysis',
-      description: 'Scroll back up and click "Analyze Risk" on any alert to get detailed impact assessment, safety recommendations, and evacuation guidance powered by AI.',
-      page: '/',
-      highlight: 'alerts-section',
+      highlight: 'dashboard-map',
       position: 'top'
     },
     {
@@ -68,8 +84,8 @@ export const TourProvider = ({ children }) => {
     },
     {
       id: 'chat-page',
-      title: '💬 AI Weather Assistant',
-      description: 'Ask questions about weather conditions, get personalized safety advice, and receive real-time updates. The AI understands context and provides actionable guidance.',
+      title: '💬 Context-Aware AI Assistant',
+      description: 'Ask questions about weather conditions, get personalized safety advice, and receive real-time updates. The AI maintains conversation context - you can ask follow-up questions like "analyze the risks for each of these alerts" and it will remember previous responses.',
       page: '/chat',
       highlight: 'chat-interface',
       position: 'top'

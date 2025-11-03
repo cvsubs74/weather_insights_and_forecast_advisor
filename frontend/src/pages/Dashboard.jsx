@@ -64,6 +64,8 @@ const Dashboard = () => {
   const [mapMarkers, setMapMarkers] = useState([]);
   const [alertPage, setAlertPage] = useState(0);
   const alertsPerPage = 4;
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
+  const [loadingMapForAlert, setLoadingMapForAlert] = useState(null);
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -95,29 +97,81 @@ const Dashboard = () => {
     if (isTourActive && isDemoMode && tourSteps[currentStep]) {
       const currentStepId = tourSteps[currentStep].id;
       
-      // Load mock data when tour reaches dashboard-alerts or dashboard-map steps
-      if (currentStepId === 'dashboard-alerts' || currentStepId === 'dashboard-map') {
-        console.log('[Dashboard] Tour active - loading mock data');
+      // Load mock data when tour reaches dashboard-alerts-scroll step
+      if (currentStepId === 'dashboard-alerts-scroll' || currentStepId === 'risk-analysis-button' || 
+          currentStepId === 'risk-analysis-modal' || currentStepId === 'show-map-button' || 
+          currentStepId === 'dashboard-map') {
+        console.log('[Dashboard] Tour active - loading mock data for alerts');
         
-        // Set mock alerts
-        setSevereEvents(mockDashboardData.alerts);
+        // Set mock alerts in the main alerts state (not severeEvents)
+        setAlerts(mockDashboardData.alerts);
         setAgentResponse(mockDashboardData.insights);
         setLocation('Tampa Bay, Florida');
         setSelectedRegion('South');
         
-        
-        // Auto-trigger risk analysis popup at the risk-analysis tour step
-        if (currentStepId === 'risk-analysis' && mockDashboardData.alerts.length > 0) {
-          setTimeout(() => {
-            console.log('[Dashboard] Auto-opening risk analysis modal for tour step');
-            setSelectedAlertForAnalysis(mockDashboardData.alerts[0]);
-            setRiskAnalysis(mockRiskAnalysis);
-            setIsRiskModalOpen(true);
-          }, 500); // Short delay for smooth transition
+        // Set map center but NO markers initially (until show-map-button step)
+        if (mockDashboardData.map_data) {
+          // Show general US map without markers initially
+          if (currentStepId === 'dashboard-alerts-scroll' || currentStepId === 'risk-analysis-button' || 
+              currentStepId === 'risk-analysis-modal') {
+            setMapMarkers([]); // No markers yet
+            setMapView({
+              center: [39.8283, -98.5795], // Center of US
+              zoom: 4
+            });
+          }
+        }
+      }
+      
+      // Auto-trigger risk analysis modal at risk-analysis-button step
+      if (currentStepId === 'risk-analysis-button') {
+        setTimeout(() => {
+          console.log('[Dashboard] Auto-opening risk analysis modal for tour');
+          setSelectedAlertForAnalysis(mockDashboardData.alerts[0]); // Hurricane Milton
+          setRiskAnalysis(mockRiskAnalysis);
+          setIsRiskModalOpen(true);
+        }, 800); // Delay for smooth transition
+      }
+      
+      // Keep modal open during risk-analysis-modal step
+      if (currentStepId === 'risk-analysis-modal') {
+        if (!isRiskModalOpen) {
+          setSelectedAlertForAnalysis(mockDashboardData.alerts[0]);
+          setRiskAnalysis(mockRiskAnalysis);
+          setIsRiskModalOpen(true);
+        }
+      }
+      
+      // Close modal and show map markers at show-map-button step
+      if (currentStepId === 'show-map-button') {
+        setTimeout(() => {
+          console.log('[Dashboard] Auto-closing risk modal and showing map markers');
+          setIsRiskModalOpen(false);
+          
+          // NOW show the map markers after "clicking" show on map
+          if (mockDashboardData.map_data && mockDashboardData.map_data.markers) {
+            setMapMarkers(mockDashboardData.map_data.markers);
+            setMapView({
+              center: [mockDashboardData.map_data.center.lat, mockDashboardData.map_data.center.lng],
+              zoom: mockDashboardData.map_data.zoom
+            });
+          }
+        }, 500); // Delay for smooth transition
+      }
+      
+      // Ensure modal is closed and markers are shown at dashboard-map step
+      if (currentStepId === 'dashboard-map') {
+        setIsRiskModalOpen(false);
+        if (mockDashboardData.map_data && mockDashboardData.map_data.markers) {
+          setMapMarkers(mockDashboardData.map_data.markers);
+          setMapView({
+            center: [mockDashboardData.map_data.center.lat, mockDashboardData.map_data.center.lng],
+            zoom: mockDashboardData.map_data.zoom
+          });
         }
       }
     }
-  }, [isTourActive, currentStep, isDemoMode, tourSteps]);
+  }, [isTourActive, currentStep, isDemoMode, tourSteps, isRiskModalOpen]);
 
   useEffect(() => {
     // Auto-load national alerts on mount - only run once
@@ -202,12 +256,46 @@ const Dashboard = () => {
     setAgentResponse('');
     try {
       const response = await api.getAlerts(currentLocation);
+      console.log('[Dashboard] loadAlerts response:', response);
+      
       if (response && response.alerts && Array.isArray(response.alerts)) {
+        // Remove duplicates based on event, area, severity, and headline
+        const uniqueAlerts = [];
+        const seenAlerts = new Set();
+        
+        for (const alert of response.alerts) {
+          // Create a unique key from multiple fields
+          const uniqueKey = `${alert.event}|${alert.area}|${alert.severity}|${alert.headline || ''}|${alert.onset || ''}`;
+          
+          if (!seenAlerts.has(uniqueKey)) {
+            seenAlerts.add(uniqueKey);
+            uniqueAlerts.push(alert);
+          }
+        }
+        
+        console.log(`[Dashboard] Removed ${response.alerts.length - uniqueAlerts.length} duplicate alerts`);
+        
+        // Sort by severity
         const severityOrder = { 'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1, 'Unknown': 0 };
-        const sortedAlerts = response.alerts.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+        const sortedAlerts = uniqueAlerts.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
         setAlerts(sortedAlerts);
+        
+        // Extract and set map data if available
+        if (response.map_data) {
+          console.log('[Dashboard] Setting map data from response:', response.map_data);
+          if (response.map_data.markers && Array.isArray(response.map_data.markers)) {
+            setMapMarkers(response.map_data.markers);
+          }
+          if (response.map_data.center) {
+            setMapView({
+              center: [response.map_data.center.lat, response.map_data.center.lng],
+              zoom: response.map_data.zoom || 7
+            });
+          }
+        }
+        
         if (sortedAlerts.length > 0) {
-          setAgentResponse(`Found ${response.alerts.length} alerts for ${currentLocation}.`);
+          setAgentResponse(`Found ${sortedAlerts.length} unique alerts for ${currentLocation}.`);
         } else {
           setAgentResponse(`No active alerts found for ${currentLocation}.`);
         }
@@ -412,24 +500,80 @@ const Dashboard = () => {
     setSelectedRegion('');
   };
 
-  const handleShowOnMap = async (alert) => {
-    if (!alert.affected_zones || alert.affected_zones.length === 0) {
+  const handleShowOnMap = async (alert, alertIndex) => {
+    console.log('[Dashboard] Show on Map clicked for alert:', alert, 'at index:', alertIndex);
+    
+    // Use index as the unique identifier to avoid issues with duplicate alert data
+    setIsLoadingMap(true);
+    setLoadingMapForAlert(alertIndex);
+    
+    // In demo mode during tour, map markers are already set
+    if (isDemoMode && isTourActive) {
+      console.log('[Dashboard] Demo mode - scrolling to map');
+      // Simulate loading delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setIsLoadingMap(false);
+      setLoadingMapForAlert(null);
+      // Just scroll to the map
+      const mapElement = document.querySelector('[data-tour-id="dashboard-map"]');
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
+    
+    // For live mode or non-tour demo mode, try to get map data
     try {
-      const mapData = await api.getMapForZones(alert.affected_zones);
-      // The agent returns a nested structure: { map_data: { markers: [], center: {} } }
-      if (mapData && mapData.map_data && mapData.map_data.markers) {
-        setMapMarkers(mapData.map_data.markers);
-        if (mapData.map_data.center) {
-          setMapView({ 
-            center: [mapData.map_data.center.lat, mapData.map_data.center.lng], 
-            zoom: 7 
+      // If alert has affected_zones, use those
+      if (alert.affected_zones && alert.affected_zones.length > 0) {
+        console.log('[Dashboard] Fetching map for affected zones:', alert.affected_zones);
+        const mapData = await api.getMapForZones(alert.affected_zones);
+        if (mapData && mapData.map_data && mapData.map_data.markers) {
+          console.log('[Dashboard] Setting map markers:', mapData.map_data.markers);
+          setMapMarkers(mapData.map_data.markers);
+          if (mapData.map_data.center) {
+            setMapView({ 
+              center: [mapData.map_data.center.lat, mapData.map_data.center.lng], 
+              zoom: 7 
+            });
+          }
+        }
+      } else {
+        // Create a marker from the alert's area information
+        console.log('[Dashboard] No affected zones, creating marker from alert area:', alert.area);
+        
+        // Try to use existing map markers if available, or create a simple marker
+        if (mapMarkers && mapMarkers.length > 0) {
+          // Keep existing markers and scroll
+          console.log('[Dashboard] Using existing map markers');
+        } else {
+          // Create a basic marker for the alert location
+          // This is a fallback - ideally the alert should have coordinates
+          console.log('[Dashboard] No markers available, using default US center');
+          setMapView({
+            center: [39.8283, -98.5795],
+            zoom: 4
           });
         }
       }
+      
+      setIsLoadingMap(false);
+      setLoadingMapForAlert(null);
+      
+      // Scroll to map after loading
+      const mapElement = document.querySelector('[data-tour-id="dashboard-map"]');
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     } catch (error) {
       console.error('Failed to get map data for zones:', error);
+      setIsLoadingMap(false);
+      setLoadingMapForAlert(null);
+      // Still scroll to map even if API fails
+      const mapElement = document.querySelector('[data-tour-id="dashboard-map"]');
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
@@ -542,50 +686,7 @@ const Dashboard = () => {
         isLoading={isAnalyzingRisk}
         alert={selectedAlertForAnalysis}
       />
-      {/* Severe Weather Events Section */}
-      {severeEvents.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6" data-tour-id="alerts-section">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">🌪️ Active Severe Weather Events</h2>
-            <div className="flex items-center gap-3">
-              {severeEvents.length > eventsPerPage && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCarouselIndex(Math.max(0, carouselIndex - eventsPerPage))}
-                    disabled={carouselIndex === 0}
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeftIcon className="h-5 w-5 text-gray-700" />
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    {Math.floor(carouselIndex / eventsPerPage) + 1} / {Math.ceil(severeEvents.length / eventsPerPage)}
-                  </span>
-                  <button
-                    onClick={() => setCarouselIndex(Math.min(severeEvents.length - eventsPerPage, carouselIndex + eventsPerPage))}
-                    disabled={carouselIndex + eventsPerPage >= severeEvents.length}
-                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRightIcon className="h-5 w-5 text-gray-700" />
-                  </button>
-                </div>
-              )}
-              <button
-                onClick={loadSevereWeatherEvents}
-                disabled={loadingEvents}
-                className="text-sm text-primary hover:text-blue-900 font-medium disabled:opacity-50"
-              >
-                {loadingEvents ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
-          </div>
-          {severeEvents.length > eventsPerPage && (
-            <div className="mt-4 text-center text-sm text-gray-500">
-              Showing {carouselIndex + 1}-{Math.min(carouselIndex + eventsPerPage, severeEvents.length)} of {severeEvents.length} events
-            </div>
-          )}
-        </div>
-      )}
-
+      
       {/* New Compact Location Selector */}
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -635,8 +736,8 @@ const Dashboard = () => {
       </div>
 
 
-      {/* Active Alerts Section - Full Width */}
-      <div className="bg-white rounded-lg shadow-md p-6 relative">
+      {/* Active Alerts Section */}
+      <div className="bg-white rounded-lg shadow-md p-6" data-tour-id={isTourActive && isDemoMode ? "alerts-section" : undefined}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
             {alerts.length > 0 && !location ? '🚨 Severe Weather Alerts' : `Active Alerts${location && agentResponse ? ` - ${location === 'all US states' ? 'National' : location}` : ''}`}
@@ -680,14 +781,20 @@ const Dashboard = () => {
           </div>
         ) : alerts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {alerts.slice(alertPage * alertsPerPage, (alertPage + 1) * alertsPerPage).map((alert, index) => (
-              <SevereWeatherCard 
-                key={index} 
-                event={alert} 
-                onAnalyzeRisk={handleAnalyzeRisk} 
-                onShowOnMap={handleShowOnMap} 
-              />
-            ))}
+            {alerts.slice(alertPage * alertsPerPage, (alertPage + 1) * alertsPerPage).map((alert, index) => {
+              // Calculate the actual index in the full alerts array
+              const actualIndex = alertPage * alertsPerPage + index;
+              return (
+                <SevereWeatherCard 
+                  key={index} 
+                  event={alert}
+                  alertIndex={actualIndex}
+                  onAnalyzeRisk={handleAnalyzeRisk} 
+                  onShowOnMap={handleShowOnMap}
+                  isLoadingMap={loadingMapForAlert === actualIndex}
+                />
+              );
+            })}
           </div>
         ) : agentResponse ? (
           <div className="text-center py-12 text-gray-500">
@@ -725,10 +832,10 @@ const Dashboard = () => {
               <Link
                 key={action.name}
                 to={action.href}
-                className={`w-full flex items-center p-3 text-left text-white ${action.color} rounded-lg hover:opacity-90 transition-opacity`}
+                className={`w-full flex items-center p-2 text-left text-white ${action.color} rounded-lg hover:opacity-90 transition-opacity`}
               >
-                <action.icon className="h-6 w-6 mr-3 text-white" />
-                <span className="font-medium">{action.name}</span>
+                <action.icon className="h-5 w-5 mr-2 text-white" />
+                <span className="font-medium text-sm">{action.name}</span>
               </Link>
             ))}
           </div>

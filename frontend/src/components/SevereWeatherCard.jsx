@@ -8,7 +8,7 @@ import {
   ShieldCheckIcon, // For general warnings
 } from '@heroicons/react/24/outline';
 
-const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
+const SevereWeatherCard = ({ event, alertIndex, onAnalyzeRisk, onShowOnMap, isLoadingMap }) => {
   const getEventIcon = (eventName) => {
     const lowerEvent = eventName.toLowerCase();
     const iconClass = "h-8 w-8 text-white";
@@ -110,11 +110,21 @@ const SevereWeatherCard = ({ event, onAnalyzeRisk, onShowOnMap }) => {
               Analyze Risk
             </button>
             <button 
-              onClick={() => onShowOnMap(event)}
-              className="flex-1 text-center px-3 py-1.5 bg-secondary text-white rounded-md hover:bg-gray-700 text-xs font-semibold transition-colors disabled:opacity-50"
-              disabled={!onShowOnMap || !event.affected_zones || event.affected_zones.length === 0}
+              onClick={() => onShowOnMap(event, alertIndex)}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary text-white rounded-md hover:bg-gray-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              disabled={isLoadingMap || !onShowOnMap}
             >
-              Show on Map
+              {isLoadingMap ? (
+                <>
+                  <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                'Show on Map'
+              )}
             </button>
           </div>
         </div>

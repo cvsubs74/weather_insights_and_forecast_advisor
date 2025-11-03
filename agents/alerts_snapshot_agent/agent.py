@@ -78,7 +78,54 @@ retriever_agent = LlmAgent(
 )
 
 
-# Phase 2: Formatter Agent - Structures and analyzes alerts
+# Phase 2: Deduplication Agent - Removes similar/duplicate alerts
+deduplication_agent = LlmAgent(
+    model="gemini-2.5-flash-lite",
+    name="alerts_deduplicator",
+    description="Intelligently removes duplicate and similar alerts",
+    instruction="""
+    You are an expert at identifying and removing duplicate or highly similar weather alerts.
+    
+    **Your Task:**
+    Analyze state["alerts_data"] and remove duplicates/similar alerts, keeping only the most informative unique alerts.
+    
+    **Deduplication Strategy:**
+    
+    1. **Exact Duplicates** - Remove if ALL match:
+       - Same event type
+       - Same severity
+       - Same headline
+       - Same start time
+       
+    2. **Similar Alerts** - Remove if these match:
+       - Same event type (e.g., "Flood Warning")
+       - Same severity level
+       - Same general area (e.g., both for "St Johns River")
+       - Start times within 5 minutes of each other
+       - Keep the alert with MORE detailed description
+       
+    3. **Geographic Overlap** - For alerts in the same river/area:
+       - "St Johns River near Astor" vs "St Johns River near Above Lake Harney"
+       - These are SIMILAR - keep only ONE with the most comprehensive information
+       - Combine affected zones if needed
+    
+    **Rules:**
+    - When choosing between similar alerts, prefer:
+      1. The one with more detailed description
+      2. The one with more affected zones
+      3. The earlier issued alert (if descriptions are similar)
+    - Log how many duplicates you removed
+    - Return the deduplicated alerts in the same format as input
+    
+    **Output:**
+    Return the cleaned alert data with duplicates removed. Pass this to the next agent.
+    """,
+    output_key="deduplicated_alerts",
+    before_model_callback=log_agent_entry,
+    after_model_callback=log_agent_exit,
+)
+
+# Phase 3: Formatter Agent - Structures and analyzes alerts
 alerts_formatter = LlmAgent(
     model="gemini-2.5-flash-lite",
     name="alerts_formatter",
@@ -87,10 +134,10 @@ alerts_formatter = LlmAgent(
     You are a weather alert presentation specialist.
     
     **Your Task:**
-    Format the alert data from state["alerts_data"] into a structured, user-friendly summary.
+    Format the alert data from state["deduplicated_alerts"] into a structured, user-friendly summary.
     
     **Process:**
-    1. Extract alerts from state["alerts_data"]
+    1. Extract alerts from state["deduplicated_alerts"] (already deduplicated)
     2. Count total alerts and severe alerts
     3. Identify affected locations
     4. For each alert, extract:
@@ -113,12 +160,13 @@ alerts_formatter = LlmAgent(
     after_model_callback=log_agent_exit,
 )
 
-# Sequential Pipeline: Retriever → Formatter
+# Sequential Pipeline: Retriever → Deduplicator → Formatter
 alerts_snapshot_workflow = SequentialAgent(
     name="alerts_snapshot_pipeline",
-    description="Retrieves weather alerts and generates a structured analysis with safety insights.",
+    description="Retrieves weather alerts, removes duplicates, and generates a structured analysis with safety insights.",
     sub_agents=[
         retriever_agent,
+        deduplication_agent,
         alerts_formatter,
     ],
 )
