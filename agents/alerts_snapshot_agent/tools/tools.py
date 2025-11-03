@@ -566,6 +566,68 @@ def get_hourly_forecast(
     return get_nws_forecast(tool_context, latitude, longitude, period="hourly")
 
 
+def get_coordinates_from_urls(
+    tool_context: ToolContext,
+    zone_urls: list[str]
+) -> Dict[str, Any]:
+    """Get geographic coordinates for a list of NWS zone URLs.
+    
+    Args:
+        zone_urls (list[str]): List of full NWS zone URLs.
+        
+    Returns:
+        dict: Coordinates for each zone with status.
+    """
+    try:
+        zone_coords = []
+        
+        for url in zone_urls:
+            try:
+                logger.info(f"Fetching coordinates for zone URL: {url}")
+                response = requests.get(url, headers=NWS_HEADERS, timeout=10)
+                response.raise_for_status()
+                zone_data = response.json()
+                
+                # Extract coordinates from GeoJSON
+                if zone_data.get("geometry") and zone_data["geometry"].get("type") == "Polygon":
+                    # For a polygon, use the first coordinate of the first ring as the representative point
+                    coords = zone_data["geometry"]["coordinates"][0][0]
+                    lat, lon = coords[1], coords[0]
+                    
+                    zone_coords.append({
+                        "zone_url": url,
+                        "latitude": lat,
+                        "longitude": lon,
+                        "status": "success"
+                    })
+                    logger.info(f"Successfully found coordinates ({lat}, {lon}) for {url}")
+                else:
+                    logger.warning(f"No valid polygon geometry found for zone URL: {url}")
+                    zone_coords.append({"zone_url": url, "status": "failed", "reason": "No polygon geometry"})
+            
+            except requests.exceptions.RequestException as e:
+                logger.error(f"API request failed for zone URL {url}: {str(e)}")
+                zone_coords.append({"zone_url": url, "status": "failed", "reason": str(e)})
+            except (ValueError, KeyError) as e:
+                logger.error(f"Failed to parse response for zone URL {url}: {str(e)}")
+                zone_coords.append({"zone_url": url, "status": "failed", "reason": f"JSON parsing error: {str(e)}"})
+
+        tool_context.state["zone_coordinates"] = zone_coords
+        
+        return {
+            "status": "completed",
+            "coordinates": zone_coords,
+            "count": len(zone_coords)
+        }
+
+    except Exception as e:
+        logger.error(f"An unexpected error occurred in get_coordinates_from_urls: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"An unexpected error occurred: {str(e)}"
+        }
+
+
 @track_tool_call("get_nws_alerts")
 def get_nws_alerts(
     tool_context: ToolContext,
