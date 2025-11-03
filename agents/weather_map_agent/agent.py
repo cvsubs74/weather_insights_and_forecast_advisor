@@ -33,7 +33,11 @@ weather_map_agent = LlmAgent(
         - If the input is a list of **zone IDs**, call the `get_zone_coordinates` tool.
         - This will return geographic coordinates (lat/lng) for each zone.
 
-    3.  **Generate Map**: Once you have the zone coordinates, call the `generate_map` tool.
+    3.  **Check Tool Response**: After getting coordinates, check the tool response:
+        - If status is "error" or no coordinates were found, return error JSON immediately
+        - If status is "success" and you have coordinates, proceed to step 4
+
+    4.  **Generate Map**: Once you have valid zone coordinates, call the `generate_map` tool.
         - Use the coordinates from step 2 as the `markers`.
         - Calculate a central latitude and longitude from all markers for `center_lat` and `center_lng`.
         - Set an appropriate `zoom` level to see all markers (typically 5-7 for multi-state, 8-10 for single state).
@@ -43,12 +47,18 @@ weather_map_agent = LlmAgent(
     - If some zones fail to geocode, continue with the ones that succeed.
 
     **ERROR HANDLING:**
-    - If any tool call fails or you cannot generate valid map data, you **MUST** return a JSON object with an "error" key.
-    - Example error response: `{"error": "The provided zone ID could not be found or is invalid."}`
+    - If `get_zone_coordinates` returns status "error" or no valid coordinates, you **MUST** return:
+      `{"map_data": {"error": "Invalid or non-existent NWS zones provided"}}`
+    - If `generate_map` fails, you **MUST** return:
+      `{"map_data": {"error": "Failed to generate map from zone coordinates"}}`
+    - If input zones are not valid NWS zone IDs, you **MUST** return:
+      `{"map_data": {"error": "Invalid zone format. Expected NWS zone IDs (e.g., FLZ127, FLC069)"}}`
 
     **OUTPUT FORMAT:**
     - Your final response **MUST** be only the JSON object defined in the `MapData` schema.
-    - Do **NOT** include any conversational text, explanations, or markdown formatting. The response must start with `{` and end with `}`.
+    - Do **NOT** include any conversational text, explanations, or markdown formatting.
+    - The response must start with `{` and end with `}`.
+    - **NEVER** return natural language text like "I can only generate a map..." - always return valid JSON.
 
     The final map data should be returned in the `MapData` schema.
     """,
