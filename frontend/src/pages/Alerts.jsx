@@ -57,7 +57,14 @@ const Alerts = () => {
       const uniqueZones = [...new Set(allZones)];
       
       const mapApiResponse = await api.getMapForZones(uniqueZones);
-      if (mapApiResponse && mapApiResponse.map_data) {
+      
+      // Check for error response
+      if (mapApiResponse && mapApiResponse.map_data && mapApiResponse.map_data.error) {
+        console.log('[Alerts] Map API returned error:', mapApiResponse.map_data.error);
+        // Show user-friendly error message using window.alert to avoid naming conflicts
+        window.alert(`Unable to generate map: ${mapApiResponse.map_data.error}`);
+        setMapData(null);
+      } else if (mapApiResponse && mapApiResponse.map_data) {
         setMapData(mapApiResponse.map_data);
       }
     } catch (error) {

@@ -146,7 +146,8 @@ alerts_formatter = LlmAgent(
        - Headline
        - Description - Full detailed alert description (preserve all important information)
        - Description_short - Concise summary for card display (max 150 characters, focus on key hazards and impacts)
-       - Affected zones
+       - Affected zones - **CRITICAL**: Preserve the EXACT zone URLs from the raw data (e.g., "https://api.weather.gov/zones/county/ORC011")
+         DO NOT convert these to county names. The frontend needs the full URLs for map generation.
        - Start and end times
     5. Generate insights about the overall alert situation
     

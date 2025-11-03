@@ -528,7 +528,13 @@ const Dashboard = () => {
       if (alert.affected_zones && alert.affected_zones.length > 0) {
         console.log('[Dashboard] Fetching map for affected zones:', alert.affected_zones);
         const mapData = await api.getMapForZones(alert.affected_zones);
-        if (mapData && mapData.map_data && mapData.map_data.markers) {
+        
+        // Check for error response
+        if (mapData && mapData.map_data && mapData.map_data.error) {
+          console.log('[Dashboard] Map API returned error:', mapData.map_data.error);
+          // Show user-friendly error message using window.alert to avoid naming conflict
+          window.alert(`Unable to generate map: ${mapData.map_data.error}`);
+        } else if (mapData && mapData.map_data && mapData.map_data.markers) {
           console.log('[Dashboard] Setting map markers:', mapData.map_data.markers);
           setMapMarkers(mapData.map_data.markers);
           if (mapData.map_data.center) {
